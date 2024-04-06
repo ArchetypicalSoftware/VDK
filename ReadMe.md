@@ -206,6 +206,7 @@ Initializes flux on the current cluster.  _This will be expanded in some way to 
 #### Remove-VdkCluster
 
 ##### Description
+Remove/Delete a cluster
 
 ##### Syntax
 ```
