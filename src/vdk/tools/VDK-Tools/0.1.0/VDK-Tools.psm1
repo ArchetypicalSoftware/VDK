@@ -8,14 +8,18 @@ function New-VdkCluster  {
         [Parameter(Mandatory=$false, Position=2)]
         [int] $ControlPlaneNodes = 1,
         [Parameter(Mandatory=$false, Position=3)]
-        [string] $KubeVersion = $null
+        [string] $KubeVersion = $null,
+        [Parameter(Mandatory=$false)]
+        [switch] $NoFlux
     )
     process {
         $tmp = [System.IO.Path]::GetTempPath()
         $config = Join-Path $tmp "$Name.yaml"
         New-KindManifest -KubeVersion $KubeVersion -WorkerNodes $WorkerNodes -ControlPlaneNodes $ControlPlaneNodes | Out-File $config
         kind create cluster -n $Name --config $config        
-        Initialize-Flux
+        if(!($NoFlux)){
+            Initialize-Flux            
+        }
     }
 }
 
