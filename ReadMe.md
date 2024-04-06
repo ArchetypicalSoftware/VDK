@@ -208,16 +208,3 @@ add-pack-source.ps1
 choco install vdk -s pack -y
 ```
 
-
-##### Description
-
-##### Syntax
-```
-
-```
-
-##### Parameters
-
-##### Example
-```
-```

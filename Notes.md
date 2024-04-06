@@ -68,3 +68,22 @@ Replace `your-package-name.nupkg` with the name of your package file and `your-a
 
 ### Additional Resources
 For more detailed instructions and advanced packaging techniques, refer to the official Chocolatey documentation on their website. There, you'll find a wealth of information on creating packages, including handling dependencies, versioning, and more complex installation scripts.
+
+
+--- 
+# Documentation Template
+
+#### Command
+
+##### Description
+
+##### Syntax
+```
+
+```
+
+##### Parameters
+
+##### Example
+```
+```
