@@ -1,5 +1,19 @@
 # VDK
 
+## Getting Started - Installation
+
+>Note: This is currently a bit manual, but is intended to use nuget to host the packages and PowerShell modules eventually to make this much simpler.
+
+### Build and Install
+
+```
+git clone (REPOSITORY)
+cd (REPOSITORY)
+build.ps1
+add-pack-source.ps1
+choco install vdk -s pack -y
+```
+
 ## Installed Tools
 
 - docker-desktop version 4.28.0
@@ -13,6 +27,20 @@
 ## VDK-Tools Module
 
 VDK-Tools PowerShell Module provides a set of PowerShell CmdLets to make it simple to spin up local kubernetes clusters (running on kind) and manage them.
+
+### TL;DR
+Documentation of each command is below, but to quickly get started creating a cluster simply run:
+
+```
+    New-VdkCluster -Name vdk -WorkerNodes 3 -ControlPlaneNodes 2
+```
+
+To clean up a cluster:
+
+```
+    Remove-VdkCluster -Name vdk
+```
+
 
 ### How to Use 
 >NOTE: Some of the documented CmdLts below are intended to be internal, but are currently exposed publicly during initial development to make it easier to test and troublehoot.
@@ -191,20 +219,5 @@ Initializes flux on the current cluster.  _This will be expanded in some way to 
 ##### Example
 ```
     Remove-Cluster -Name vdk
-```
-
-
-## Getting Started - Installation
-
->Note: This is currently a bit manual, but is intended to use nuget to host the packages and PowerShell modules eventually to make this much simpler.
-
-### Build and Install
-
-```
-git clone (REPOSITORY)
-cd (REPOSITORY)
-build.ps1
-add-pack-source.ps1
-choco install vdk -s pack -y
 ```
 
