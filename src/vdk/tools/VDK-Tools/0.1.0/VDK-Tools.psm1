@@ -129,7 +129,21 @@ function Remove-VdkCluster {
 
 function Initialize-Flux {
     process{
-        flux bootstrap github --owner=$env:GITHUB_USER --repository=kind-flux --branch=main --path=./clusters/default --personal
+        flux bootstrap github --owner=ArchetypicalSoftware --repository=vdk-flux --branch=initial --path=./clusters/default --private 
+    }
+}
+
+function Set-EnvironmentVariable {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true, Position=0)]
+        [string] $Key,
+        [Parameter(Mandatory=$true, Position=2)]
+        [string] $Value
+    )
+    process {
+        [System.Environment]::SetEnvironmentVariable($Key, $Value, [System.EnvironmentVariableTarget]::User)
+        Set-Item -Path env:$Key -Value $Value
     }
 }
 
@@ -141,3 +155,4 @@ Export-ModuleMember -Function Get-KindVersion
 Export-ModuleMember -Function Get-KindImage
 Export-ModuleMember -Function Initialize-Flux
 Export-ModuleMember -Function Remove-VdkCluster
+Export-ModuleMember -Function Set-EnvironmentVariable

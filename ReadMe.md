@@ -67,6 +67,8 @@ Creates a new cluster.
 
 - KubeVersion: _(default: latest)_ The kubernetes version to run.  This can be any version for which there is a published image available for the version of Kind running on the localmachine.  When not specified the system will find the latest version supported by your version of kind.  Format: major.minor (ex.  1.29)
 
+- NoFlux: _(switch)_ When present this switch causes the new cluster to be created without initializing flux automatically
+
 ##### Example
 ```
     New-VdkCluster -Name test-cluster -WorkerNodes 3 -ControlPlaneNodes 2 -KubeVersion 1.28
@@ -220,5 +222,27 @@ Remove/Delete a cluster
 ##### Example
 ```
     Remove-Cluster -Name vdk
+```
+
+---
+
+#### Set-EnvironmentVariable
+
+##### Description
+Sets an environment variable such that it is immediately available in the current session and persists sessions at the user level.
+
+##### Syntax
+```
+    Set-Environment -Key <Key> -Value <value>
+```
+
+##### Parameters
+
+- Key: _(Required)_ The environment variable to set
+- Value: _(Required)_ The value of the environment variable
+
+##### Example
+```
+    Set-EnvironmentVariable -Key Foo -Value Bar
 ```
 
