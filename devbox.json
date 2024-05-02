@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.10.5/.schema/devbox.schema.json",
+  "packages": [
+    "kubectl@1.29.3",
+    "kubernetes-helm@3.14.3",
+    "fluxctl@1.25.4",
+    "docker@24.0.5",
+    "kind@0.22.0",
+    "k9s@0.32.4",
+    "powershell@7.4.1"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome the Vega Development Shell (VDK)!'"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ]
+    }
+  }
+}
