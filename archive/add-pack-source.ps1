@@ -1,1 +1,0 @@
-choco source add -n pack -s .\.pack
