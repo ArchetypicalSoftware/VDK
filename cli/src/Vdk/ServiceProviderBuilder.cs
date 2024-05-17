@@ -23,6 +23,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IConsole, SystemConsole>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IShell, SystemShell>()
+            .AddSingleton<IKindClient, KindClient>()
+            .AddSingleton<IFluxClient, FluxClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>();
 
 

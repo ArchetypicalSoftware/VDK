@@ -11,6 +11,8 @@ public class EmbeddedDataReader : IEmbeddedDataReader
         _serializer = serializer;
     }
 
+    public static IEmbeddedDataReader Default => new EmbeddedDataReader(new JsonObjectSerializer());
+
     public string Read(string path)
     {
         using (var stream = (typeof(EmbeddedDataReader).Assembly.GetManifestResourceStream(path)))

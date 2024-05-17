@@ -23,10 +23,12 @@ public class KindNode
 public class PortMapping
 {
     public int ContainerPort { get; set; } = 80;
-    public int HostPort { get; set; } = 8080;
+    public int HostPort { get; set; } = 80;
     public string Protocol { get; set; } = "TCP";
 
+    public string ListenAddress { get; set; } = "127.0.0.1";
+
     public static PortMapping DefaultHttp => new PortMapping();
-    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 443, HostPort = 4443 };
+    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 443, HostPort = 443 };
     public static List<PortMapping> Defaults => new() { DefaultHttp, DefaultHttps };
 }

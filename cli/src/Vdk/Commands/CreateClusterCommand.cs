@@ -14,15 +14,17 @@ public class CreateClusterCommand: Command
     private readonly IEmbeddedDataReader _dataReader;
     private readonly IYamlObjectSerializer _yaml;
     private readonly IFileSystem _fileSystem;
-    private readonly IShell _shell;
+    private readonly IKindClient _kind;
+    private readonly IFluxClient _flux;
 
-    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IShell shell) : base("cluster", "Create a vega development cluster")
+    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux) : base("cluster", "Create a vega development cluster")
     {
         _console = console;
         _dataReader = dataReader;
         _yaml = yaml;
         _fileSystem = fileSystem;
-        _shell = shell;
+        _kind = kind;
+        _flux = flux;
         var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
         var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
         var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
@@ -40,8 +42,7 @@ public class CreateClusterCommand: Command
         string? kindVersion = null;
         try
         {
-            var kindVersionString = _shell.ExecuteAndCapture("kind", new[] { "--version" });
-            kindVersion = (kindVersionString.Length > 13) ? kindVersionString.Substring(13).Trim() : null;
+            kindVersion = _kind.GetVersion();
         }
         catch (Exception ex)
         {
@@ -92,8 +93,8 @@ public class CreateClusterCommand: Command
             _console.WriteLine(path);
             await writer.WriteAsync(manifest);
         }
-        _shell.Execute("kind", new []{"create", "cluster", "--config", path, "--name", name.ToLower()});
 
-        _shell.Execute("flux", new []{ "bootstrap", "github", "--owner=ArchetypicalSoftware", "--repository=vdk-flux", "--branch=initial", "--path=./clusters/default", "--private"});
+        _kind.CreateCluster(name.ToLower(), path);
+        _flux.Bootstrap("./clusters/default");
     }
 }
