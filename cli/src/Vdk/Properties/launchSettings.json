@@ -2,7 +2,7 @@
   "profiles": {
     "Vdk": {
       "commandName": "Project",
-      "commandLineArgs": "create cluster"
+      "commandLineArgs": "create cluster -c 2 -w 4 -n v2 -k 1.28"
     }
   }
 }
