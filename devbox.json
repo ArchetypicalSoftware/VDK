@@ -12,11 +12,15 @@
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome the Vega Development Shell (VDK)!'"
+      "dotnet vega init"
     ],
     "scripts": {
       "test": [
         "echo \"Error: no test specified\" && exit 1"
+      ],
+      "pack": [
+        "dotnet build ./cli -c Release",
+        "dotnet pack ./cli -c Release -o ./packages"
       ]
     }
   }

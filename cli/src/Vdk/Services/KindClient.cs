@@ -16,6 +16,19 @@ public class KindClient : IKindClient
         _shell.Execute("kind", new[] { "create", "cluster", "--config", configPath, "--name", name.ToLower() });
     }
 
+    public void DeleteCluster(string name)
+    {
+        _shell.Execute("kind", new [] {"delete", "cluster", "-n", name.ToLower()});
+    }
+
+    public List<string> ListClusters()
+    {
+        var response = _shell.ExecuteAndCapture("kind", new[] { "get", "clusters" });
+        if (string.IsNullOrWhiteSpace(response)) return new List<string>();
+        return response.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim())
+            .ToList();
+    }
+
     public string? GetVersion()
     {
         var response = GetVersionString();

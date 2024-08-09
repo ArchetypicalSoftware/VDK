@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "vegactl": {
+      "version": "1.0.3",
+      "commands": [
+        "vega"
+      ]
+    }
+  }
+}
