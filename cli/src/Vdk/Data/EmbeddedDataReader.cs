@@ -15,7 +15,9 @@ public class EmbeddedDataReader : IEmbeddedDataReader
 
     public string Read(string path)
     {
-        using (var stream = (typeof(EmbeddedDataReader).Assembly.GetManifestResourceStream(path)))
+        var names = typeof(EmbeddedDataReader).Assembly.GetManifestResourceNames();
+        var name = names.FirstOrDefault(x=>x.Equals(path, StringComparison.CurrentCultureIgnoreCase))??path;
+        using (var stream = (typeof(EmbeddedDataReader).Assembly.GetManifestResourceStream(name)))
         {
             if(stream == null) throw new FileNotFoundException();
             using (var reader = new StreamReader(stream))

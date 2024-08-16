@@ -5,10 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>vegactl</AssemblyName>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>vega</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <AssemblyName>vega</AssemblyName>
     <Version>1.0.3</Version>
   </PropertyGroup>
 

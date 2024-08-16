@@ -1,26 +1,16 @@
 {
-  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.10.5/.schema/devbox.schema.json",
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
   "packages": [
-    "kubectl@1.29.3",
-    "kubernetes-helm@3.14.3",
-    "docker@24.0.5",
     "kind@0.22.0",
-    "k9s@0.32.4",
-    "powershell@7.4.1",
-    "fluxcd@2.2.3",
-    "dotnet-sdk_8@8.0.204"
+    "fluxcd@latest"
   ],
   "shell": {
     "init_hook": [
-      "dotnet vega init"
+      "echo 'Welcome to devbox!' > /dev/null"
     ],
     "scripts": {
       "test": [
         "echo \"Error: no test specified\" && exit 1"
-      ],
-      "pack": [
-        "dotnet build ./cli -c Release",
-        "dotnet pack ./cli -c Release -o ./packages"
       ]
     }
   }
