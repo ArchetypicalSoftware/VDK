@@ -1,6 +1,8 @@
 name: Pull-Request-Build
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
 on: 
   pull_request:
     branches:
@@ -16,7 +18,7 @@ jobs:
       with:
         dotnet-version: '8.x'
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore ./cli
     - name: Build the solution
       run: dotnet build ./cli --no-restore --configuration Release
     - name: Run tests

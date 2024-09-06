@@ -29,7 +29,7 @@ jobs:
           dotnet-version: '8.0.x' # Specify the .NET version you are using
           
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore ./cli
       
       - name: Build
         run: dotnet build ./cli --no-restore --configuration Release
