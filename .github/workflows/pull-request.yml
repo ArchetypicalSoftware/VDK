@@ -1,0 +1,25 @@
+name: Pull-Request-Build
+permissions: {}
+on: 
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read 
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    - name: Restore dependencies
+      run: dotnet restore ./cli
+    - name: Build the solution
+      run: dotnet build ./cli --no-restore --configuration Release
+    - name: Run tests
+      run: dotnet test ./cli --no-build --configuration Release --verbosity normal

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Vdk": {
+      "commandName": "Project",
+      "commandLineArgs": "init"
+    }
+  }
+}

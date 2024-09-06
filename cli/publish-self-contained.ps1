@@ -1,0 +1,5 @@
+dotnet publish .\src\VDK\VDK.csproj -o ..\packages\build\win-x64 -r win-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+
+dotnet publish .\src\VDK\VDK.csproj -o ..\packages\build\linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+
+dotnet publish .\src\VDK\VDK.csproj -o ..\packages\build\osx-x64 -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true

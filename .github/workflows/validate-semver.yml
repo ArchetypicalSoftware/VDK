@@ -1,0 +1,20 @@
+name: Validate-Semantic-Versioning
+permissions: {}
+on: 
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    permissions:
+      contents: read
+      pull-requests: read 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jefflinse/pr-semver-bump@v1.6.0
+        name: Validate Pull Request Metadata
+        with:
+          mode: validate
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          noop-labels: 'documentation'
