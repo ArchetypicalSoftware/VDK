@@ -1,4 +1,6 @@
 name: Pull-Request-Build
+permissions:
+  contents: read
 on: 
   pull_request:
     branches:
@@ -16,6 +18,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build the solution
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build ./cli --no-restore --configuration Release
     - name: Run tests
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test ./cli --no-build --verbosity normal
