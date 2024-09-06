@@ -1,8 +1,5 @@
 name: Pull-Request-Build
-permissions:
-  contents: read
-  pull-requests: read
-  issues: read
+permissions: {}
 on: 
   pull_request:
     branches:
@@ -10,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
