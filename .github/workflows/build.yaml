@@ -1,0 +1,71 @@
+name: Build-Test-And-Publish
+permissions:
+  contents: write
+on:
+  workflow_run:
+    workflows:
+      - Bump-and-Tag-Semantic-Version
+    types:
+      - completed
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 'Get Version Tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 0.1.0 # Optional fallback tag to use when no tag can be found
+          #workingDirectory: another/path/where/a/git/repo/is/checked/out # Optional alternative working directory
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Specify the .NET version you are using
+          
+      - name: Restore
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Install Zip Utility
+        run: sudo apt-get install -y zip && mkdir -p ./artifacts
+
+      - name: Publish Windows Build
+        run: |
+          dotnet publish ./cli/src/VDK/VDK.csproj -o ./packages/build/win-x64 -r win-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+          zip -r ./artifacts/vega-win-x64.zip ./packages/build/win-x64/vega.exe
+
+      - name: Publish Linux Build
+        run: |
+          dotnet publish ./cli/src/VDK/VDK.csproj -o ./packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+          tar -czvf ./artifacts/vega-linux-x64.tar.gz ./packages/build/linux-x64/vega
+
+      - name: Publish OSX Build
+        run: |
+          dotnet publish ./cli/src/VDK/VDK.csproj -o ./packages/build/osx-x64 -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+          tar -czvf ./artifacts/vega-osx-x64.tar.gz ./packages/build/osx-x64/vega
+
+      - name: Create Release
+        run: |
+          gh release create ${{ steps.previoustag.outputs.tag }} \
+            --title "Release v${{ steps.previoustag.outputs.tag }}" \
+            --notes "This is the release for version ${{ steps.previoustag.outputs.tag }}" \
+            ./artifacts/*.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# dotnet publish ./src/VDK/VDK.csproj -o ../packages/build/win-x64 -r win-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+
+# dotnet publish ./src/VDK/VDK.csproj -o ../packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+
+# dotnet publish ./src/VDK/VDK.csproj -o ../packages/build/osx-x64 -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
