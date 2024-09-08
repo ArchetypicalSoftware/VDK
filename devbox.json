@@ -8,7 +8,7 @@
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "export PATH=$PATH:~/.vega/bin && mkdir -p ~/.vega/bin"
     ],
     "scripts": {
       "test": [
