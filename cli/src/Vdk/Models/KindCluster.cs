@@ -1,5 +1,7 @@
 using k8s;
 using k8s.Models;
+using System.Net.Sockets;
+using System.Net;
 using YamlDotNet.Serialization;
 
 namespace Vdk.Models;
@@ -20,6 +22,12 @@ public class KindNode
     public List<PortMapping>? ExtraPortMappings { get; set; } = null;
 }
 
+public class FileMapping
+{
+    public string Source { get; set; } = string.Empty;
+    public string Destination { get; set; } = string.Empty;
+}
+
 public class PortMapping
 {
     public int ContainerPort { get; set; } = 80;
@@ -28,7 +36,15 @@ public class PortMapping
 
     public string ListenAddress { get; set; } = "127.0.0.1";
 
-    public static PortMapping DefaultHttp => new PortMapping();
-    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 443, HostPort = 443 };
-    public static List<PortMapping> Defaults => new() { DefaultHttp, DefaultHttps };
+    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 443, HostPort = GetRandomUnusedPort() };
+    public static List<PortMapping> Defaults => [DefaultHttps];
+
+    internal static int GetRandomUnusedPort()
+    {
+        using var tcpListener = new TcpListener(IPAddress.Any, 0);
+        tcpListener.Start();
+        var port = ((IPEndPoint)tcpListener.LocalEndpoint).Port;
+        tcpListener.Stop();
+        return port;
+    }
 }

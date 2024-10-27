@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using Docker.DotNet;
 using Microsoft.Extensions.DependencyInjection;
 using Vdk.Commands;
 using Vdk.Data;
@@ -30,8 +31,14 @@ public static class ServiceProviderBuilder
             .AddSingleton<IShell, SystemShell>()
             .AddSingleton<IKindClient, KindClient>()
             .AddSingleton<IFluxClient, FluxClient>()
-            .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>();
-
+            .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
+            .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
+            .AddSingleton<IDockerEngine, LocalDockerClient>()
+            .AddSingleton<IDockerClient>(provider =>
+            {
+                return new DockerClientConfiguration()
+                    .CreateClient();
+            });
 
         return services.BuildServiceProvider();
     }
