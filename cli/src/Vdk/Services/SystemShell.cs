@@ -25,6 +25,10 @@ public class SystemShell : IShell
         };
         process.OutputDataReceived += Process_OutputDataReceived;
 
+        process.EnableRaisingEvents = true;
+        
+        process.ErrorDataReceived += Process_OutputDataReceived;
+
         process.Start();
 
         process.BeginOutputReadLine();

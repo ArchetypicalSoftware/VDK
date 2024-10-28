@@ -36,8 +36,9 @@ public class PortMapping
 
     public string ListenAddress { get; set; } = "127.0.0.1";
 
-    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 443, HostPort = GetRandomUnusedPort() };
-    public static List<PortMapping> Defaults => [DefaultHttps];
+    public static PortMapping DefaultHttp => new PortMapping { ContainerPort = 30080, HostPort = GetRandomUnusedPort() };
+    public static PortMapping DefaultHttps => new PortMapping { ContainerPort = 30443, HostPort = GetRandomUnusedPort() };
+    public static List<PortMapping> Defaults => [DefaultHttps, DefaultHttp];
 
     internal static int GetRandomUnusedPort()
     {
