@@ -2,7 +2,7 @@
 
 public class FluxClient : IFluxClient
 {
-    public const string DefaultBranch= "initial";
+    public const string DefaultBranch = "initial";
 
     private readonly IConsole _console;
     private readonly IShell _shell;
@@ -19,7 +19,7 @@ public class FluxClient : IFluxClient
             new[]
             {
                 "bootstrap", "github", "--owner=ArchetypicalSoftware", "--repository=vdk-flux", $"--branch={branch}",
-                $"--path={path}", "--private"
+                $"--path={path}"
             });
     }
 }

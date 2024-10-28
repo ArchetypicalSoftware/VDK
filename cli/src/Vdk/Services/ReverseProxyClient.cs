@@ -1,15 +1,20 @@
-﻿using Vdk.Models;
+﻿using k8s;
+using k8s.Models;
+using KubeOps.KubernetesClient;
+using Vdk.Models;
 
 namespace Vdk.Services;
 
 internal class ReverseProxyClient : IReverseProxyClient
 {
     private readonly IDockerEngine _docker;
+    private readonly IKubernetesClient _client;
     private const string NginxConf = "vega.conf";
 
-    public ReverseProxyClient(IDockerEngine docker)
+    public ReverseProxyClient(IDockerEngine docker, IKubernetesClient client)
     {
         _docker = docker;
+        _client = client;
         if (!_docker.Exists("nginx"))
         {
             var conf = new FileInfo(NginxConf);
@@ -21,6 +26,8 @@ internal class ReverseProxyClient : IReverseProxyClient
                     writer.WriteLine("    listen 443;");
                     writer.WriteLine("    listen [::]:443;");
                     writer.WriteLine("    server_name _;");
+                    writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem");
+                    writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem");
                     writer.WriteLine("    location / {");
                     writer.WriteLine("        proxy_pass http://localhost:80;");
                     writer.WriteLine("        proxy_set_header Host $host;");
@@ -31,11 +38,17 @@ internal class ReverseProxyClient : IReverseProxyClient
                     writer.WriteLine("}");
                 }
             }
-
+            var fullChain = new FileInfo("Certs/fullchain.pem");
+            var privKey = new FileInfo("Certs/privkey.pem");
             _docker.Run("nginx", "nginx",
                 new[] { new PortMapping() { HostPort = 443, ContainerPort = 443 } },
                 null,
-                new[] { new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName } },
+                new[]
+                {
+                    new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName },
+                    new FileMapping() { Destination = "/etc/certs/fullchain.pem", Source = fullChain.FullName },
+                    new FileMapping() { Destination = "/etc/certs/privkey.pem", Source = privKey.FullName },
+                },
                 null);
         }
     }
@@ -93,11 +106,13 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine();
         writer.WriteLine($"##### START {clusterName}");
         writer.WriteLine("server {");
-        writer.WriteLine($"    listen 443;");
-        writer.WriteLine($"    listen [::]:443;");
+        writer.WriteLine($"    listen 443 ssl http2;");
+        writer.WriteLine($"    listen [::]:443 ssl http2;");
         writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
+        writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem");
+        writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem");
         writer.WriteLine("    location / {");
-        writer.WriteLine($"       proxy_pass http://host.docker.internal:{targetPortHttps};");
+        writer.WriteLine($"       proxy_pass https://host.docker.internal:{targetPortHttps};");
         writer.WriteLine("        proxy_set_header Host $host;");
         writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
         writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
@@ -107,6 +122,24 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine($"##### END {clusterName}");
         writer.WriteLine();
         writer.Flush();
+
+        // write the cert secret to the cluster
+
+        var tls = new V1Secret()
+        {
+            Metadata = new()
+            {
+                Name = "dev-tls",
+                NamespaceProperty = "vega"
+            },
+            Type = "kubernetes.io/tls",
+            Data = new Dictionary<string, byte[]>
+            {
+                { "tls.crt", File.ReadAllBytes("Certs/fullchain.pem") },
+                { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
+            }
+        };
+        _client.Create(tls);
 
         _docker.Exec("nginx", new[] { "nginx", "-s", "reload" });
     }

@@ -27,7 +27,7 @@ public class LocalDockerClient : IDockerEngine
             {
                 Image = image,
                 Name = name,
-                
+
                 Labels = new Dictionary<string, string> { { "vega-component", name } },
                 ExposedPorts = ports?.ToDictionary(x => $"{x.ContainerPort}/tcp", y => default(EmptyStruct)),
                 Volumes = volumes?.ToDictionary(x => x.Destination, y => new EmptyStruct()),
@@ -70,7 +70,16 @@ public class LocalDockerClient : IDockerEngine
 
     public bool Exec(string name, string[] commands)
     {
-        _dockerClient.Exec.ExecCreateContainerAsync(name, new ContainerExecCreateParameters
+        // Get container id from name and labels
+        var container = _dockerClient.Containers.ListContainersAsync(
+            new ContainersListParameters()
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "label", new Dictionary<string, bool> { { "vega-component", true } } } },
+                Limit = 10,
+            }).GetAwaiter().GetResult().FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
+
+        if (container == null) return false;
+        _dockerClient.Exec.ExecCreateContainerAsync(container.ID, new ContainerExecCreateParameters
         {
             AttachStdout = true,
             AttachStderr = true,

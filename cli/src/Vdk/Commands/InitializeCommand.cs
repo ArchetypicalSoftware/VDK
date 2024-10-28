@@ -104,7 +104,7 @@ public class InitializeCommand : Command
         }
 
         _kind.CreateCluster(name.ToLower(), path);
-        var masterNode = cluster.Nodes.First(x=>x.ExtraPortMappings?.Any()==true);
+        var masterNode = cluster.Nodes.First(x => x.ExtraPortMappings?.Any() == true);
         if (masterNode == null)
         {
             _console.WriteError("Unable to find the master node");
@@ -113,7 +113,6 @@ public class InitializeCommand : Command
 
         _flux.Bootstrap("./clusters/default");
 
-        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,masterNode.ExtraPortMappings.Last().HostPort);
-        
+        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
     }
 }

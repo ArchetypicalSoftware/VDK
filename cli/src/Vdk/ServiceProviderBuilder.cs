@@ -1,5 +1,7 @@
 using System.IO.Abstractions;
 using Docker.DotNet;
+using k8s;
+using KubeOps.KubernetesClient;
 using Microsoft.Extensions.DependencyInjection;
 using Vdk.Commands;
 using Vdk.Data;
@@ -34,6 +36,10 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
             .AddSingleton<IDockerEngine, LocalDockerClient>()
+            .AddSingleton<IKubernetesClient>(provider =>
+            {
+                return new KubernetesClient(KubernetesClientConfiguration.BuildDefaultConfig());
+            })
             .AddSingleton<IDockerClient>(provider =>
             {
                 return new DockerClientConfiguration()
