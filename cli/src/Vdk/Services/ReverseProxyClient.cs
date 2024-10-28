@@ -26,8 +26,8 @@ internal class ReverseProxyClient : IReverseProxyClient
                     writer.WriteLine("    listen 443;");
                     writer.WriteLine("    listen [::]:443;");
                     writer.WriteLine("    server_name _;");
-                    writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem");
-                    writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem");
+                    writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
+                    writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
                     writer.WriteLine("    location / {");
                     writer.WriteLine("        proxy_pass http://localhost:80;");
                     writer.WriteLine("        proxy_set_header Host $host;");
@@ -109,8 +109,8 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine($"    listen 443 ssl http2;");
         writer.WriteLine($"    listen [::]:443 ssl http2;");
         writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
-        writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem");
-        writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem");
+        writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
+        writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
         writer.WriteLine("    location / {");
         writer.WriteLine($"       proxy_pass https://host.docker.internal:{targetPortHttps};");
         writer.WriteLine("        proxy_set_header Host $host;");
