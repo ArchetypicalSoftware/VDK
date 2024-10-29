@@ -34,10 +34,10 @@ public class InitializeCommand : Command
 
     public async Task InvokeAsync()
     {
-        string name = Defaults.ClusterName;
-        int controlPlaneNodes = 1;
-        int workerNodes = 2;
-        string kubeVersion = Defaults.KubeApiVersion;
+        var name = Defaults.ClusterName;
+        var controlPlaneNodes = 1;
+        var workerNodes = 2;
+        var kubeVersion = Defaults.KubeApiVersion;
 
         var existing = _kind.ListClusters();
         if (existing.Any(x => x.Equals(name, StringComparison.CurrentCultureIgnoreCase)))
@@ -47,72 +47,7 @@ public class InitializeCommand : Command
 
         _console.WriteLine("Welcome to Vega! Initializing your environment");
 
-        var map = _dataReader.ReadJsonObjects<KindVersionMap>("Vdk.Data.KindVersionData.json");
-        string? kindVersion = null;
-        try
-        {
-            kindVersion = _kind.GetVersion();
-        }
-        catch (Exception ex)
-        {
-            _console.WriteError($"Unable to retrieve the installed kind version. {ex.Message}");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(kindVersion))
-        {
-            _console.WriteWarning($"Kind version {kindVersion} is not supported by the current VDK.");
-            return;
-        }
-        var image = map.FindImage(kindVersion, kubeVersion);
-        if (image == null)
-        {
-            if (map.FirstOrDefault(m => m.Version == kindVersion) is null)
-            {
-                _console.WriteWarning($"Kind version '{kindVersion}' is not supported by the VDK.");
-            }
-            _console.WriteLine($"Unable to find image for kind version '{kindVersion}' and kubernetes api version '{kubeVersion}'");
-            return;
-        }
-
-        var cluster = new KindCluster();
-        for (int index = 0; index < controlPlaneNodes; index++)
-        {
-            var node = new KindNode { Role = "control-plane", Image = image };
-            if (index == 0)
-            {
-                node.Labels = new Dictionary<string, string>
-                {
-                    {"ingress-ready", "true"}
-                };
-                node.ExtraPortMappings = PortMapping.Defaults;
-            }
-            cluster.Nodes.Add(node);
-        }
-
-        for (int index = 0; index < workerNodes; index++)
-        {
-            cluster.Nodes.Add(new KindNode() { Role = "worker", Image = image });
-        }
-
-        var manifest = _yaml.Serialize(cluster);
-        var path = _fileSystem.Path.GetTempFileName();
-        using (var writer = _fileSystem.File.CreateText(path))
-        {
-            _console.WriteLine(path);
-            await writer.WriteAsync(manifest);
-        }
-
-        _kind.CreateCluster(name.ToLower(), path);
-        var masterNode = cluster.Nodes.First(x => x.ExtraPortMappings?.Any() == true);
-        if (masterNode == null)
-        {
-            _console.WriteError("Unable to find the master node");
-            return;
-        }
-
-        _flux.Bootstrap("./clusters/default");
-
-        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
+        await new CreateClusterCommand(_console, _dataReader, _yaml, _fileSystem, _kind, _flux, _reverseProxy)
+            .InvokeAsync(name, controlPlaneNodes, workerNodes, kubeVersion);
     }
 }
