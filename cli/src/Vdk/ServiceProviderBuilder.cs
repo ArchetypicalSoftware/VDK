@@ -36,15 +36,21 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
             .AddSingleton<IDockerEngine, LocalDockerClient>()
-            .AddTransient(provider =>
+            .AddTransient<Func<string, IKubernetesClient>>(provider =>
             {
-                return new Lazy<IKubernetesClient>(() =>
-                    new KubernetesClient(KubernetesClientConfiguration.BuildDefaultConfig()));
+                return context =>
+                {
+                    var config = KubernetesClientConfiguration.LoadKubeConfig();
+                    config.CurrentContext = $"kind-{context}";
+                    return new KubernetesClient(KubernetesClientConfiguration.BuildConfigFromConfigObject(config));
+                };
             })
             .AddSingleton<IDockerClient>(provider =>
             {
-                return new DockerClientConfiguration()
-                    .CreateClient();
+                // Default Docker Engine on Linux
+                return new DockerClientConfiguration(
+                                        new Uri("unix:///var/run/docker.sock"))
+                                    .CreateClient();
             });
 
         return services.BuildServiceProvider();

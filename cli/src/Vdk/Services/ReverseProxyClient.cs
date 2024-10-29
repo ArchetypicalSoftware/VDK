@@ -8,10 +8,10 @@ namespace Vdk.Services;
 internal class ReverseProxyClient : IReverseProxyClient
 {
     private readonly IDockerEngine _docker;
-    private readonly Lazy<IKubernetesClient> _client;
+    private readonly Func<string, IKubernetesClient> _client;
     private const string NginxConf = "vega.conf";
 
-    public ReverseProxyClient(IDockerEngine docker, Lazy<IKubernetesClient> client)
+    public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client)
     {
         _docker = docker;
         _client = client;
@@ -139,7 +139,7 @@ internal class ReverseProxyClient : IReverseProxyClient
                 { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
             }
         };
-        _client.Value.Create(tls);
+        _client(clusterName).Create(tls);
 
         _docker.Exec("nginx", new[] { "nginx", "-s", "reload" });
     }
