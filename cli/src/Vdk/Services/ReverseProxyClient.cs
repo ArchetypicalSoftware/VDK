@@ -20,11 +20,16 @@ internal class ReverseProxyClient : IReverseProxyClient
             var conf = new FileInfo(NginxConf);
             if (!conf.Exists)
             {
+                if (!conf.Directory.Exists)
+                {
+                    conf.Directory.Create();
+                }
+                File.Create(conf.FullName).Dispose();
                 using (var writer = conf.CreateText())
                 {
                     writer.WriteLine("server {");
-                    writer.WriteLine("    listen 443;");
-                    writer.WriteLine("    listen [::]:443;");
+                    writer.WriteLine("    listen 443 ssl http2;");
+                    writer.WriteLine("    listen [::]:443 ssl http2;");
                     writer.WriteLine("    server_name _;");
                     writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
                     writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");

@@ -16,10 +16,13 @@ public class FluxClient : IFluxClient
     public void Bootstrap(string path, string branch = DefaultBranch)
     {
         _shell.Execute("flux",
-            new[]
-            {
-                "bootstrap", "github", "--owner=ArchetypicalSoftware", "--repository=vdk-flux", $"--branch={branch}",
+            [
+                "bootstrap",
+                "github",
+                "--owner=ArchetypicalSoftware",
+                "--repository=vdk-flux",
+                $"--branch={branch}",
                 $"--path={path}"
-            });
+            ]);
     }
 }
