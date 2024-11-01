@@ -44,6 +44,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
             .AddSingleton<IDockerEngine, LocalDockerClient>()
+            .AddSingleton<IHubClient,DockerHubClient>()
             .AddTransient<Func<string, IKubernetesClient>>(provider =>
             {
                 return context =>

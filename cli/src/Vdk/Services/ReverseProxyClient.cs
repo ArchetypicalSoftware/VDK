@@ -30,11 +30,12 @@ internal class ReverseProxyClient : IReverseProxyClient
                     writer.WriteLine("server {");
                     writer.WriteLine("    listen 443 ssl http2;");
                     writer.WriteLine("    listen [::]:443 ssl http2;");
-                    writer.WriteLine("    server_name _;");
+                    writer.WriteLine("    server_name hub.dev-k8s.cloud;");
                     writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
                     writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
                     writer.WriteLine("    location / {");
-                    writer.WriteLine("        proxy_pass http://localhost:80;");
+                    writer.WriteLine("        client_max_body_size 0;");
+                    writer.WriteLine("        proxy_pass http://host.docker.internal:5000;");
                     writer.WriteLine("        proxy_set_header Host $host;");
                     writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
                     writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
@@ -79,7 +80,7 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
         writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
         writer.WriteLine("    location / {");
-        writer.WriteLine($"       proxy_pass https://host.docker.internal:{targetPortHttps};");
+        writer.WriteLine($"        proxy_pass https://host.docker.internal:{targetPortHttps};");
         writer.WriteLine("        proxy_set_header Host $host;");
         writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
         writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
