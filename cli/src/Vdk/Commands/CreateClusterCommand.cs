@@ -81,17 +81,42 @@ public class CreateClusterCommand : Command
                 };
                 node.ExtraPortMappings = PortMapping.Defaults;
             }
+            node.ExtraMounts = new List<Mount>
+            {
+                new()
+                {
+                    HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName, 
+                    ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
+                }
+            };
             cluster.Nodes.Add(node);
         }
 
         for (int index = 0; index < workerNodes; index++)
         {
-            cluster.Nodes.Add(new KindNode() { Role = "worker", Image = image });
+            cluster.Nodes.Add(new KindNode() { Role = "worker", Image = image, ExtraMounts = new List<Mount>
+                {
+                    new()
+                    {
+                        HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName,
+                        ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
+                    }
+                }
+            });
         }
+
+        // add the containerd config patches
+        cluster.ContainerdConfigPatches =
+        [
+            @"
+[plugins.""io.containerd.grpc.v1.cri"".registry]
+  config_path = ""/etc/containerd/certs.d""
+".Trim()
+        ];
 
         var manifest = _yaml.Serialize(cluster);
         var path = _fileSystem.Path.GetTempFileName();
-        using (var writer = _fileSystem.File.CreateText(path))
+        await using (var writer = _fileSystem.File.CreateText(path))
         {
             _console.WriteLine(path);
             await writer.WriteAsync(manifest);
