@@ -1,3 +1,4 @@
+using Shell.NET;
 using System.Diagnostics;
 
 namespace Vdk.Services;
@@ -13,6 +14,8 @@ public class SystemShell : IShell
 
     public void Execute(string command, string[] args)
     {
+        
+        
         var cmd = new ProcessStartInfo(command)
         {
             Arguments = string.Join(" ", args),
@@ -24,6 +27,10 @@ public class SystemShell : IShell
             StartInfo = cmd
         };
         process.OutputDataReceived += Process_OutputDataReceived;
+
+        process.EnableRaisingEvents = true;
+        
+        process.ErrorDataReceived += Process_OutputDataReceived;
 
         process.Start();
 

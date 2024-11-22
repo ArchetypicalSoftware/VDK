@@ -8,7 +8,7 @@ using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
 
-public class CreateClusterCommand: Command
+public class CreateClusterCommand : Command
 {
     private readonly IConsole _console;
     private readonly IEmbeddedDataReader _dataReader;
@@ -16,8 +16,9 @@ public class CreateClusterCommand: Command
     private readonly IFileSystem _fileSystem;
     private readonly IKindClient _kind;
     private readonly IFluxClient _flux;
+    private readonly IReverseProxyClient _reverseProxy;
 
-    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux) 
+    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy)
         : base("cluster", "Create a Vega development cluster")
     {
         _console = console;
@@ -26,6 +27,7 @@ public class CreateClusterCommand: Command
         _fileSystem = fileSystem;
         _kind = kind;
         _flux = flux;
+        _reverseProxy = reverseProxy;
         var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
         var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
         var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
@@ -79,23 +81,57 @@ public class CreateClusterCommand: Command
                 };
                 node.ExtraPortMappings = PortMapping.Defaults;
             }
+            node.ExtraMounts = new List<Mount>
+            {
+                new()
+                {
+                    HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName, 
+                    ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
+                }
+            };
             cluster.Nodes.Add(node);
         }
 
         for (int index = 0; index < workerNodes; index++)
         {
-            cluster.Nodes.Add(new KindNode() { Role = "worker", Image = image });
+            cluster.Nodes.Add(new KindNode() { Role = "worker", Image = image, ExtraMounts = new List<Mount>
+                {
+                    new()
+                    {
+                        HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName,
+                        ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
+                    }
+                }
+            });
         }
+
+        // add the containerd config patches
+        cluster.ContainerdConfigPatches =
+        [
+            @"
+[plugins.""io.containerd.grpc.v1.cri"".registry]
+  config_path = ""/etc/containerd/certs.d""
+".Trim()
+        ];
 
         var manifest = _yaml.Serialize(cluster);
         var path = _fileSystem.Path.GetTempFileName();
-        using (var writer = _fileSystem.File.CreateText(path))
+        await using (var writer = _fileSystem.File.CreateText(path))
         {
             _console.WriteLine(path);
             await writer.WriteAsync(manifest);
         }
 
         _kind.CreateCluster(name.ToLower(), path);
+        var masterNode = cluster.Nodes.FirstOrDefault(x => x.ExtraPortMappings?.Any() == true);
+        if (masterNode == null)
+        {
+            _console.WriteError("Unable to find the master node");
+            return;
+        }
+
         _flux.Bootstrap("./clusters/default");
+
+        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
     }
 }

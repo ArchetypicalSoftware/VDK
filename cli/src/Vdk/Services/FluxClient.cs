@@ -2,7 +2,7 @@
 
 public class FluxClient : IFluxClient
 {
-    public const string DefaultBranch= "initial";
+    public const string DefaultBranch = "initial";
 
     private readonly IConsole _console;
     private readonly IShell _shell;
@@ -16,10 +16,13 @@ public class FluxClient : IFluxClient
     public void Bootstrap(string path, string branch = DefaultBranch)
     {
         _shell.Execute("flux",
-            new[]
-            {
-                "bootstrap", "github", "--owner=ArchetypicalSoftware", "--repository=vdk-flux", $"--branch={branch}",
-                $"--path={path}", "--private"
-            });
+            [
+                "bootstrap",
+                "github",
+                "--owner=ArchetypicalSoftware",
+                "--repository=vdk-flux",
+                $"--branch={branch}",
+                $"--path={path}"
+            ]);
     }
 }
