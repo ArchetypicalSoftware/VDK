@@ -3,17 +3,18 @@
 > These are interim notes for internal use. 
 
 ## Prerequisites
-> This is only while we are in development phase - Before running the first time, run this command
+> This is only while we are in development phase - Once the repo is public it won't be necessary 
+Run
+```
+echo >> ~/.bashrc && echo "export GITHUB_VDK_TOKEN=<YOUR_GHPAT>" >> ~/.bashrc
+```
 
+> Temporary: Before running the first time, run this command Working on integrating this into the process
 ```
 echo >> ~/.bashrc && echo "export PATH=\"$PATH:/<PATH_TO_MY_REPO>/.bin\"" >> ~/.bashrc
 
 # ex: echo >> ~/.bashrc && echo "export PATH=\"$PATH:/mnt/d/Code/Archetypical/VDK/.bin\"" >> ~/.bashrc
 ```
-
-
-
-
 
 ## Getting Started
 
