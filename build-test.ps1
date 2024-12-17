@@ -1,0 +1,2 @@
+dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+copy ./packages/build/linux-x64/* .\.bin\

@@ -22,7 +22,8 @@ public class FluxClient : IFluxClient
                 "--owner=ArchetypicalSoftware",
                 "--repository=vdk-flux",
                 $"--branch={branch}",
-                $"--path={path}"
+                $"--path={path}",
+                "--read-write-key=false"
             ]);
     }
 }
