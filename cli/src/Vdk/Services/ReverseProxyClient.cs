@@ -9,7 +9,8 @@ internal class ReverseProxyClient : IReverseProxyClient
 {
     private readonly IDockerEngine _docker;
     private readonly Func<string, IKubernetesClient> _client;
-    private const string NginxConf = "vega.conf";
+    //private const string NginxConf = "vega.conf";
+    private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
 
     public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client)
     {
