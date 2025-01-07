@@ -10,7 +10,6 @@ if groups $USER | grep -q "\bdocker\b"; then
     # Get the latest release information
     echo "Fetching the latest release information..."
     LATEST_RELEASE=$(curl -s -H "Authorization: token $TOKEN" "https://api.github.com/repos/$REPO/releases/latest")
-
     VERSION=$(echo "$LATEST_RELEASE" | jq -r ".tag_name")
     CURRENT=$(cat ./.bin/vdk.version)
     if [ "$VERSION" != "$CURRENT" ]; then
@@ -46,12 +45,11 @@ if groups $USER | grep -q "\bdocker\b"; then
     cd ./.bin
     BIN_PATH=$(pwd)
     cd ..
-    echo "$PATH" | grep -q $BIN_PATH
-    if [ $? -ne 0 ]; then
-        echo "Updating Path"
-        export PATH="$PATH:$BIN_PATH"
-        echo $PATH
-    fi
+    # echo "$PATH" | grep -q $BIN_PATH
+    # if [ $? -ne 0 ]; then
+    #     echo "Updating Path"
+    #     echo >> ~/.bashrc && echo "export PATH='$PATH:$BIN_PATH'" >> ~/.bashrc && source ~/.bashrc
+    # fi
 else
     echo "Adding user $USER to docker group"
     echo " (This will require sudo access)"
