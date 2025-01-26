@@ -2,9 +2,13 @@
 
 public interface IReverseProxyClient
 {
-    void Upsert(string clusterName, int targetPortHttps, int targetPortHttp);
+    void UpsertCluster(string clusterName, int targetPortHttps, int targetPortHttp);
 
-    void Delete(string clusterName);
+    void DeleteCluster(string clusterName);
+
+    void Create();
+
+    void Delete();
 
     void List();
 }

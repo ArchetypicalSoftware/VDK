@@ -1,33 +1,40 @@
-﻿using Vdk.Models;
+﻿using Vdk.Constants;
+using Vdk.Models;
 
 namespace Vdk.Services;
 
 public class DockerHubClient : IHubClient
 {
     private readonly IDockerEngine _docker;
+    private readonly IConsole _console;
 
-    public DockerHubClient(IDockerEngine docker)
+    public DockerHubClient(IDockerEngine docker, IConsole console)
     {
         _docker = docker;
-
-        if (!_docker.Exists("registry"))
+        _console = console;
+    }
+    public void Create()
+    {
+        if (!_docker.Exists(Containers.RegistryName))
         {
-            _docker.Run("registry:2",
-                "registry",
-                new PortMapping[] { new PortMapping() { ContainerPort = 5000, HostPort = 5000 } },
+            _console.WriteLine("Creating Vega VDK Registry");
+            _console.WriteLine(" - This may take a few minutes...");
+            _docker.Run(Containers.RegistryImage,
+                Containers.RegistryName,
+                [PortMapping.DefaultRegistryPortMapping],
                 null,
                 null,
                 null);
         }
-
-    }
-    public void Create()
-    {
-        
     }
 
     public void Destroy()
     {
-        throw new NotImplementedException();
+        if (_docker.Exists(Containers.RegistryName))
+        {
+            _console.WriteWarning("Deleting Vega VDK Registry from Docker");
+            _console.WriteLine("You can recreate the registry using command 'vega create registry'");
+            _docker.Delete(Containers.RegistryName);
+        }
     }
 }

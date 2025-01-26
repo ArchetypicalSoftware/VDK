@@ -132,6 +132,6 @@ public class CreateClusterCommand : Command
 
         _flux.Bootstrap("./clusters/default");
 
-        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
+        _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
     }
 }

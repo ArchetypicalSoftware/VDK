@@ -1,5 +1,6 @@
 ﻿using k8s.Models;
 using KubeOps.KubernetesClient;
+using Vdk.Constants;
 using Vdk.Models;
 
 namespace Vdk.Services;
@@ -8,15 +9,27 @@ internal class ReverseProxyClient : IReverseProxyClient
 {
     private readonly IDockerEngine _docker;
     private readonly Func<string, IKubernetesClient> _client;
+    private readonly IConsole _console;
+
     //private const string NginxConf = "vega.conf";
     private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
 
-    public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client)
+    public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client, IConsole console)
     {
         _docker = docker;
         _client = client;
-        if (!_docker.Exists("nginx"))
+        _console = console;
+    }
+
+    private const string StartComment = "##### START";
+    private const string EndComment = "##### END";
+
+    public void Create()
+    {
+        if (!_docker.Exists(Containers.ProxyName))
         {
+            _console.WriteLine("Creating Vega VDK Proxy");
+            _console.WriteLine(" - This may take a few minutes...");
             var conf = new FileInfo(NginxConf);
             if (!conf.Exists)
             {
@@ -46,7 +59,7 @@ internal class ReverseProxyClient : IReverseProxyClient
             }
             var fullChain = new FileInfo("Certs/fullchain.pem");
             var privKey = new FileInfo("Certs/privkey.pem");
-            _docker.Run("nginx", "nginx",
+            _docker.Run(Containers.ProxyImage, Containers.ProxyName,
                 new[] { new PortMapping() { HostPort = 443, ContainerPort = 443 } },
                 null,
                 new[]
@@ -59,10 +72,21 @@ internal class ReverseProxyClient : IReverseProxyClient
         }
     }
 
-    private const string StartComment = "##### START";
-    private const string EndComment = "##### END";
+    public void Delete()
+    {
+        if (_docker.Exists(Containers.ProxyName))
+        {
+            _console.WriteWarning("Deleting Vega VDK Proxy from Docker");
+            _console.WriteLine("You can recreate the proxy using command 'vega create proxy'");
+            _docker.Delete(Containers.ProxyName);
+        }
+        else
+        {
+            _console.WriteLine("Proxy not found.");
+        }
+    }
 
-    public void Upsert(string clusterName, int targetPortHttps, int targetPortHttp)
+    public void UpsertCluster(string clusterName, int targetPortHttps, int targetPortHttp)
     {
         // create a new server block in the nginx conf pointing to the target port listening on the https://clusterName.dev-k8s.cloud domain
         // reload the nginx configuration
@@ -172,7 +196,7 @@ internal class ReverseProxyClient : IReverseProxyClient
         }
     }
 
-    public void Delete(string clusterName)
+    public void DeleteCluster(string clusterName)
     {
         ClearCluster(clusterName).Flush();
         ReloadConfigs();
