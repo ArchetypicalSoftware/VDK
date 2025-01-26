@@ -1,6 +1,6 @@
 ﻿using System.CommandLine;
 using Vdk.Services;
-using IConsole = System.CommandLine.IConsole;
+using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
 
