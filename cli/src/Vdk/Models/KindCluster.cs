@@ -1,8 +1,5 @@
-using k8s;
-using k8s.Models;
 using System.Net.Sockets;
 using System.Net;
-using YamlDotNet.Serialization;
 
 namespace Vdk.Models;
 

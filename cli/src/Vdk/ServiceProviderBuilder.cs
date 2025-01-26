@@ -8,7 +8,6 @@ using Vdk.Data;
 using Vdk.Services;
 using System.Runtime.InteropServices;
 using Vdk.Constants;
-using Vdk.Models;
 
 namespace Vdk;
 

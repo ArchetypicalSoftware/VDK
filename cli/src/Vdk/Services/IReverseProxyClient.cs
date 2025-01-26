@@ -1,6 +1,4 @@
-﻿using Docker.DotNet;
-
-namespace Vdk.Services;
+﻿namespace Vdk.Services;
 
 public interface IReverseProxyClient
 {

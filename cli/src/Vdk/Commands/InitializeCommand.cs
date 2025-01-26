@@ -1,9 +1,7 @@
-﻿using System;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.IO.Abstractions;
 using Vdk.Constants;
 using Vdk.Data;
-using Vdk.Models;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
 
