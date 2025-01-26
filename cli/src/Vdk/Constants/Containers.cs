@@ -1,4 +1,4 @@
-﻿namespace Vdk.Constants;
+namespace Vdk.Constants;
 
 public static class Containers
 {

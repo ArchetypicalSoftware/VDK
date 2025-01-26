@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeOps.KubernetesClient;
 using Vdk.Constants;
 using Vdk.Models;

@@ -1,4 +1,4 @@
-﻿namespace Vdk.Services;
+namespace Vdk.Services;
 
 public class FluxClient : IFluxClient
 {

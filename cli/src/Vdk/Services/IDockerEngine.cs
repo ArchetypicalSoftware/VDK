@@ -1,4 +1,4 @@
-﻿using Vdk.Models;
+using Vdk.Models;
 
 namespace Vdk.Services;
 

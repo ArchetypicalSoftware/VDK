@@ -1,4 +1,4 @@
-﻿using Vdk.Constants;
+using Vdk.Constants;
 using Vdk.Models;
 
 namespace Vdk.Services;
