@@ -21,7 +21,7 @@ internal class ReverseProxyClient : IReverseProxyClient
             var conf = new FileInfo(NginxConf);
             if (!conf.Exists)
             {
-                if (!conf.Directory.Exists)
+                if (!conf.Directory!.Exists)
                 {
                     conf.Directory.Create();
                 }
