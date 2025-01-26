@@ -1,5 +1,3 @@
-using SemVersion;
-
 namespace Vdk.Models;
 
 public class KindVersionMap: List<KindVersion>

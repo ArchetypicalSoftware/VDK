@@ -2,12 +2,12 @@
   "profiles": {
     "Vdk": {
       "commandName": "Project",
-      "commandLineArgs": "create cluster -n vdk2"
+      "commandLineArgs": "init"
     },
     "WSL": {
       "commandName": "WSL2",
-      "distributionName": "",
-      "commandLineArgs": "{OutDir}vega.dll create cluster -n vdk-wsl"
+      "commandLineArgs": "{OutDir}vega.dll create cluster -n vdk-wsl",
+      "distributionName": ""
     }
   }
 }

@@ -7,6 +7,7 @@ using Vdk.Commands;
 using Vdk.Data;
 using Vdk.Services;
 using System.Runtime.InteropServices;
+using Vdk.Constants;
 
 namespace Vdk;
 
@@ -18,7 +19,7 @@ public static class ServiceProviderBuilder
         var yaml = new YamlObjectSerializer();
 
         _ = services
-            .AddSingleton<OperatingSystem>(s =>  
+            .AddSingleton<Models.OperatingSystem>(s =>  
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return new(Platform.Linux);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return new(Platform.OSX);
@@ -36,6 +37,10 @@ public static class ServiceProviderBuilder
             .AddSingleton<CreateClusterCommand>()
             .AddSingleton<RemoveClusterCommand>()
             .AddSingleton<ListClustersCommand>()
+            .AddSingleton<CreateProxyCommand>()
+            .AddSingleton<RemoveProxyCommand>()
+            .AddSingleton<CreateRegistryCommand>()
+            .AddSingleton<RemoveRegistryCommand>()
             .AddSingleton<IConsole, SystemConsole>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IShell, SystemShell>()
@@ -56,7 +61,7 @@ public static class ServiceProviderBuilder
             })
             .AddSingleton<IDockerClient>(provider =>
             {
-                var os = provider.GetRequiredService<OperatingSystem>();
+                var os = provider.GetRequiredService<Models.OperatingSystem>();
 
                 return os.Platform switch
                 {
@@ -68,29 +73,8 @@ public static class ServiceProviderBuilder
                         new Uri("npipe://./pipe/docker_engine")).CreateClient(),
                     _ => throw new NotSupportedException("Unknown OS")
                 };
-
-                // Default Docker Engine on Linux
-                return new DockerClientConfiguration(
-                                        new Uri("unix:///var/run/docker.sock"))
-                                    .CreateClient();
             });
 
         return services.BuildServiceProvider();
     }
-}
-
-public class OperatingSystem
-{
-    public OperatingSystem(Platform platform)
-    {
-        Platform = platform;
-    }
-
-    public Platform Platform { get; set; }
-}
-public enum Platform
-{
-    Linux,
-    OSX,
-    Windows
 }

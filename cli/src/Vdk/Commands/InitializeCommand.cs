@@ -1,9 +1,5 @@
-﻿using System;
-using System.CommandLine;
-using System.IO.Abstractions;
+﻿using System.CommandLine;
 using Vdk.Constants;
-using Vdk.Data;
-using Vdk.Models;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
 
@@ -11,24 +7,20 @@ namespace Vdk.Commands;
 
 public class InitializeCommand : Command
 {
-    private readonly IConsole _console;
-    private readonly IEmbeddedDataReader _dataReader;
-    private readonly IYamlObjectSerializer _yaml;
-    private readonly IFileSystem _fileSystem;
+    private readonly CreateClusterCommand _createCluster;
+    private readonly CreateProxyCommand _createProxy;
+    private readonly CreateRegistryCommand _createRegistry;
     private readonly IKindClient _kind;
-    private readonly IFluxClient _flux;
-    private readonly IReverseProxyClient _reverseProxy;
+    private readonly IConsole _console;
 
-    public InitializeCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy)
+    public InitializeCommand(CreateClusterCommand createCluster, CreateProxyCommand createProxy, CreateRegistryCommand createRegistry, IKindClient kind, IConsole console)
         : base("init", "Initialize environment")
     {
-        _console = console;
-        _dataReader = dataReader;
-        _yaml = yaml;
-        _fileSystem = fileSystem;
+        _createCluster = createCluster;
+        _createProxy = createProxy;
+        _createRegistry = createRegistry;
         _kind = kind;
-        _flux = flux;
-        _reverseProxy = reverseProxy;
+        _console = console;
         this.SetHandler(InvokeAsync);
     }
 
@@ -46,8 +38,8 @@ public class InitializeCommand : Command
         }
 
         _console.WriteLine("Welcome to Vega! Initializing your environment");
-
-        await new CreateClusterCommand(_console, _dataReader, _yaml, _fileSystem, _kind, _flux, _reverseProxy)
-            .InvokeAsync(name, controlPlaneNodes, workerNodes, kubeVersion);
+        await _createProxy.InvokeAsync();
+        await _createRegistry.InvokeAsync();
+        await _createCluster.InvokeAsync(name, controlPlaneNodes, workerNodes, kubeVersion);
     }
 }

@@ -118,7 +118,7 @@ public class CreateClusterCommand : Command
         var path = _fileSystem.Path.GetTempFileName();
         await using (var writer = _fileSystem.File.CreateText(path))
         {
-            _console.WriteLine(path);
+            // _console.WriteLine(path);
             await writer.WriteAsync(manifest);
         }
 
@@ -132,6 +132,6 @@ public class CreateClusterCommand : Command
 
         _flux.Bootstrap("./clusters/default");
 
-        _reverseProxy.Upsert(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
+        _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
     }
 }

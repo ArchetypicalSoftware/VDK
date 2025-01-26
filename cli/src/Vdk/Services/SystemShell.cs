@@ -1,4 +1,3 @@
-using Shell.NET;
 using System.Diagnostics;
 
 namespace Vdk.Services;
