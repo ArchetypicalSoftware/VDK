@@ -13,6 +13,10 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     //private const string NginxConf = "vega.conf";
     private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
+    
+    // Rever seProxyHostPort is 443 by default, unless REVERSE_PROXY_HOST_PORT is set as an env var
+    private int ReverseProxyHostPort = GetEnvironmentVariableAsInt("REVERSE_PROXY_HOST_PORT", 443);
+     
 
     public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client, IConsole console)
     {
@@ -26,8 +30,18 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     public void Create()
     {
-        if (!_docker.Exists(Containers.ProxyName))
+        bool proxyExists = false;
+        try
         {
+            proxyExists = _docker.Exists(Containers.ProxyName);
+        }
+        catch (Exception e)
+        {
+            _console.WriteWarning($"Failed to check if docker container {Containers.ProxyName} exists. Check configuration or try again.");
+            _console.WriteError(e);
+            return;
+        }
+        if (!proxyExists) {
             _console.WriteLine("Creating Vega VDK Proxy");
             _console.WriteLine(" - This may take a few minutes...");
             var conf = new FileInfo(NginxConf);
@@ -41,8 +55,9 @@ internal class ReverseProxyClient : IReverseProxyClient
                 using (var writer = conf.CreateText())
                 {
                     writer.WriteLine("server {");
-                    writer.WriteLine("    listen 443 ssl http2;");
-                    writer.WriteLine("    listen [::]:443 ssl http2;");
+                    writer.WriteLine($"    listen {ReverseProxyHostPort} ssl;");
+                    writer.WriteLine($"    listen [::]:{ReverseProxyHostPort} ssl;");
+                    writer.WriteLine("    http2 on;");                    
                     writer.WriteLine("    server_name hub.dev-k8s.cloud;");
                     writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
                     writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
@@ -57,18 +72,34 @@ internal class ReverseProxyClient : IReverseProxyClient
                     writer.WriteLine("}");
                 }
             }
+            else
+            {
+                _console.WriteWarning($" - Reverse proxy configuration for {conf.FullName} exists, skipping creation of file. Ensure it has the right values.");
+            }
             var fullChain = new FileInfo("Certs/fullchain.pem");
             var privKey = new FileInfo("Certs/privkey.pem");
-            _docker.Run(Containers.ProxyImage, Containers.ProxyName,
-                new[] { new PortMapping() { HostPort = 443, ContainerPort = 443 } },
-                null,
-                new[]
-                {
-                    new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName },
-                    new FileMapping() { Destination = "/etc/certs/fullchain.pem", Source = fullChain.FullName },
-                    new FileMapping() { Destination = "/etc/certs/privkey.pem", Source = privKey.FullName },
-                },
-                null);
+            try
+            {
+                _docker.Run(Containers.ProxyImage, Containers.ProxyName,
+                    new[] { new PortMapping() { HostPort = ReverseProxyHostPort, ContainerPort = 443 } },
+                    null,
+                    new[]
+                    {
+                        new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName },
+                        new FileMapping() { Destination = "/etc/certs/fullchain.pem", Source = fullChain.FullName },
+                        new FileMapping() { Destination = "/etc/certs/privkey.pem", Source = privKey.FullName },
+                    },
+                    null);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error creating reverse proxy: {e}");
+            }
+        }
+        else
+        {
+            _console.WriteLine("Vega VDK Proxy already created");
         }
     }
 
@@ -98,11 +129,11 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine();
         writer.WriteLine($"##### START {clusterName}");
         writer.WriteLine("server {");
-        writer.WriteLine($"    listen 443 ssl http2;");
-        writer.WriteLine($"    listen [::]:443 ssl http2;");
+        writer.WriteLine($"    listen ${ReverseProxyHostPort} ssl http2;");
+        writer.WriteLine($"    listen [::]:${ReverseProxyHostPort} ssl http2;");
         writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
-        writer.WriteLine($"    ssl_certificate  /etc/certs/fullchain.pem;");
-        writer.WriteLine($"    ssl_certificate_key  /etc/certs/privkey.pem;");
+        writer.WriteLine("    ssl_certificate  /etc/certs/fullchain.pem;");
+        writer.WriteLine("    ssl_certificate_key  /etc/certs/privkey.pem;");
         writer.WriteLine("    location / {");
         writer.WriteLine($"        proxy_pass https://host.docker.internal:{targetPortHttps};");
         writer.WriteLine("        proxy_set_header Host $host;");
@@ -116,6 +147,17 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.Flush();
 
         // write the cert secret to the cluster
+        if (_client(clusterName).Get<V1Namespace>("vega") == null)
+        {
+            var ns = new V1Namespace()
+            {
+                Metadata =
+                {
+                    Name = "vega"
+                }
+            };
+            _client(clusterName).Create(ns);
+        }
 
         var tls = new V1Secret()
         {
@@ -131,7 +173,11 @@ internal class ReverseProxyClient : IReverseProxyClient
                 { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
             }
         };
-        _client(clusterName).Create(tls);
+        if (_client(clusterName).Get<V1Secret>("dev-tls") == null)
+        {
+            _console.WriteLine("Creating vega secret");
+            _client(clusterName).Create(tls);    
+        }
 
         ReloadConfigs();
     }
@@ -205,5 +251,15 @@ internal class ReverseProxyClient : IReverseProxyClient
     public void List()
     {
         throw new NotImplementedException();
+    }
+    
+    private static int GetEnvironmentVariableAsInt(string variableName, int defaultValue = 0)
+    {
+        string strValue = Environment.GetEnvironmentVariable(variableName);
+        if (strValue != null && int.TryParse(strValue, out int intValue))
+        {
+            return intValue;
+        }
+        return defaultValue;
     }
 }

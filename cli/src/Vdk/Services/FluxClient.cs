@@ -15,7 +15,10 @@ public class FluxClient : IFluxClient
 
     public void Bootstrap(string path, string branch = DefaultBranch)
     {
-        _shell.Execute("flux",
+        _console.WriteLine("Flux bootstrapping. This may take a few minutes. Please wait...");
+        try
+        {
+            _shell.Execute("flux",
             [
                 "bootstrap",
                 "github",
@@ -23,7 +26,16 @@ public class FluxClient : IFluxClient
                 "--repository=vdk-flux",
                 $"--branch={branch}",
                 $"--path={path}",
-                "--read-write-key=false"
+                "--read-write-key=false",
+                "--verbose"
             ]);
+            
+        } catch (Exception ex)
+        {
+            _console.WriteLine($"Error bootstrapping: {ex.Message}");
+        }
+        
+        _console.WriteLine("Flux bootstrap complete.");
+        
     }
 }

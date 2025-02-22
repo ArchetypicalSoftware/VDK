@@ -21,7 +21,7 @@ public class LocalDockerClient : IDockerEngine
           },
           null,
           new Progress<JSONMessage>()).GetAwaiter().GetResult();
-
+        var extraHosts = Environment.OSVersion.Platform == PlatformID.Unix ? (List<string>)["host.docker.internal:host-gateway"] : null;
         var response = _dockerClient.Containers.CreateContainerAsync(
             new CreateContainerParameters()
             {
@@ -35,7 +35,12 @@ public class LocalDockerClient : IDockerEngine
                 {
                     PortBindings = ports?.ToDictionary(x => $"{x.ContainerPort}/tcp", y => (IList<PortBinding>)new[] { new PortBinding() { HostPort = y.HostPort.ToString() } }.ToList()),
                     Binds = volumes?.Select(x => $"{x.Source}:{x.Destination}").ToArray(),
-                    RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.UnlessStopped }
+                    RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.UnlessStopped },
+                    // ExtraHosts should be a list of strings where each string is in the format "<host>:<port>"
+                    // This may not be required for mac/windows but it wont work for linux without it.
+                    // can we detect the architecture and set it accordingly?
+                    ExtraHosts = extraHosts
+                    
                 }
             }).GetAwaiter().GetResult();
 
@@ -52,7 +57,6 @@ public class LocalDockerClient : IDockerEngine
             }).GetAwaiter().GetResult();
         var container = containers.FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
         if (container == null) return false;
-
         return container.State == "running" ||
                // this should be started, lets do it
                _dockerClient.Containers.StartContainerAsync(container.ID, new ContainerStartParameters() { }).GetAwaiter().GetResult();

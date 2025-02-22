@@ -16,6 +16,11 @@ echo >> ~/.bashrc && echo "export PATH=\"$PATH:/<PATH_TO_MY_REPO>/.bin\"" >> ~/.
 # ex: echo >> ~/.bashrc && echo "export PATH=\"$PATH:/mnt/d/Code/Archetypical/VDK/.bin\"" >> ~/.bashrc
 ```
 
+You may also need to create a secret in the ns flux-system with your GITHUB_VDK_TOKEN.
+``
+
+``
+
 > **_NOTE_**: You can run the commands for your own shell script login (e.g .zshrc, .profile). Remember to source it if you dont exit the terminal:
 
 ```
@@ -58,5 +63,11 @@ sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist
     devbox shell
 ```
 - Run `vega --help` to see the available commands
+
+### Configuration options
+
+If you already have a process listening on your host on port 443, you will have issues with the vega reverse proxy.
+You can either stop the existing process or change the port by defining the environment variable `REVERSE_PROXY_HOST_PORT`. 
+The default port is 443.
 
 
