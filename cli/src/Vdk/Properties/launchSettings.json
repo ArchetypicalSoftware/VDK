@@ -2,7 +2,10 @@
   "profiles": {
     "Vdk": {
       "commandName": "Project",
-      "commandLineArgs": "init"
+      "commandLineArgs": "create cluster",
+      "environmentVariables": {
+        "GITHUB_TOKEN": "xxxxx"
+      }
     },
     "WSL": {
       "commandName": "WSL2",
