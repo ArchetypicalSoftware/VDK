@@ -6,7 +6,7 @@ public interface IDockerEngine
 {
     bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands);
 
-    bool Exists(string name);
+    bool Exists(string name,bool checkRunning = true);
 
     bool Delete(string name);
 

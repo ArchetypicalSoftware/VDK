@@ -47,7 +47,7 @@ public class LocalDockerClient : IDockerEngine
         return _dockerClient.Containers.StartContainerAsync(response.ID, new ContainerStartParameters() { }).GetAwaiter().GetResult();
     }
 
-    public bool Exists(string name)
+    public bool Exists(string name, bool checkRunning = true)
     {
         IList<ContainerListResponse> containers = _dockerClient.Containers.ListContainersAsync(
             new ContainersListParameters()
@@ -56,7 +56,10 @@ public class LocalDockerClient : IDockerEngine
                 Limit = 10,
             }).GetAwaiter().GetResult();
         var container = containers.FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
+        
         if (container == null) return false;
+        if (checkRunning == false) return true;
+        
         return container.State == "running" ||
                // this should be started, lets do it
                _dockerClient.Containers.StartContainerAsync(container.ID, new ContainerStartParameters() { }).GetAwaiter().GetResult();
@@ -64,7 +67,18 @@ public class LocalDockerClient : IDockerEngine
 
     public bool Delete(string name)
     {
-        throw new NotImplementedException();
+        IList<ContainerListResponse> containers = _dockerClient.Containers.ListContainersAsync(
+            new ContainersListParameters()
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "label", new Dictionary<string, bool> { { "vega-component", true } } } },
+                Limit = 10,
+            }).GetAwaiter().GetResult();
+        var container = containers.FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
+        if (container != null)
+        {
+            _dockerClient.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters(){Force = true});
+        }
+        return true;
     }
 
     public bool Stop(string name)
