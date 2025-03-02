@@ -69,8 +69,9 @@ public class FluxClient : IFluxClient
         }
         if (clusterRepo == null)
         {
-            _client(clusterName).ApiClient.CustomObjects.CreateNamespacedCustomObject("source.toolkit.fluxcd.io", "v1",
-                "gitrepositories", repo.Name(), repo.Name());
+            _client(clusterName).ApiClient.CustomObjects.CreateNamespacedCustomObject(repo, 
+                "source.toolkit.fluxcd.io", "v1","flux-system",
+                "gitrepositories");
         } //TODO: reconciliate and update ?
         
         var rootKustomization = new Kustomization()
