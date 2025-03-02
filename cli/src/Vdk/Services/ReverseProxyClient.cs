@@ -13,8 +13,9 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     //private const string NginxConf = "vega.conf";
     private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
+
     
-    // Rever seProxyHostPort is 443 by default, unless REVERSE_PROXY_HOST_PORT is set as an env var
+    // ReverseProxyHostPort is 443 by default, unless REVERSE_PROXY_HOST_PORT is set as an env var
     private int ReverseProxyHostPort = GetEnvironmentVariableAsInt("REVERSE_PROXY_HOST_PORT", 443);
      
 
@@ -105,7 +106,7 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     public void Delete()
     {
-        if (_docker.Exists(Containers.ProxyName))
+        if (_docker.Exists(Containers.ProxyName, false))
         {
             _console.WriteWarning("Deleting Vega VDK Proxy from Docker");
             _console.WriteLine("You can recreate the proxy using command 'vega create proxy'");
@@ -129,8 +130,9 @@ internal class ReverseProxyClient : IReverseProxyClient
         writer.WriteLine();
         writer.WriteLine($"##### START {clusterName}");
         writer.WriteLine("server {");
-        writer.WriteLine($"    listen ${ReverseProxyHostPort} ssl http2;");
-        writer.WriteLine($"    listen [::]:${ReverseProxyHostPort} ssl http2;");
+        writer.WriteLine($"    listen {ReverseProxyHostPort} ssl;");
+        writer.WriteLine($"    listen [::]:{ReverseProxyHostPort} ssl;");
+        writer.WriteLine("    http2 on;");      
         writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
         writer.WriteLine("    ssl_certificate  /etc/certs/fullchain.pem;");
         writer.WriteLine("    ssl_certificate_key  /etc/certs/privkey.pem;");
@@ -173,7 +175,7 @@ internal class ReverseProxyClient : IReverseProxyClient
                 { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
             }
         };
-        if (_client(clusterName).Get<V1Secret>("dev-tls") == null)
+        if (_client(clusterName).Get<V1Secret>("dev-tls", "vega") == null)
         {
             _console.WriteLine("Creating vega secret");
             _client(clusterName).Create(tls);    
