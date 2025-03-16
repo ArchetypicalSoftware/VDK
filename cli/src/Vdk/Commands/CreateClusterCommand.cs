@@ -131,7 +131,18 @@ public class CreateClusterCommand : Command
         }
 
         _flux.Bootstrap(name.ToLower(), "./clusters/default", branch: "initial-readonly");
+        try
+        {
+            _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
+                masterNode.ExtraPortMappings.Last().HostPort);
+        }
+        catch (Exception e)
+        {
+            // print the stack trace
+            _console.WriteLine(e.StackTrace);
+            _console.WriteError("Failed to update reverse proxy: " + e.Message);
+            throw e;
+        }
         
-        _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort, masterNode.ExtraPortMappings.Last().HostPort);
     }
 }

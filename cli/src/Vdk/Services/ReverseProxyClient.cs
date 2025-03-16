@@ -10,15 +10,12 @@ internal class ReverseProxyClient : IReverseProxyClient
     private readonly IDockerEngine _docker;
     private readonly Func<string, IKubernetesClient> _client;
     private readonly IConsole _console;
-
-    //private const string NginxConf = "vega.conf";
+    
     private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
-
     
     // ReverseProxyHostPort is 443 by default, unless REVERSE_PROXY_HOST_PORT is set as an env var
     private int ReverseProxyHostPort = GetEnvironmentVariableAsInt("REVERSE_PROXY_HOST_PORT", 443);
-     
-
+    
     public ReverseProxyClient(IDockerEngine docker, Func<string, IKubernetesClient> client, IConsole console)
     {
         _docker = docker;
@@ -122,45 +119,64 @@ internal class ReverseProxyClient : IReverseProxyClient
     {
         // create a new server block in the nginx conf pointing to the target port listening on the https://clusterName.dev-k8s.cloud domain
         // reload the nginx configuration
-
-        
-
-        using var writer = ClearCluster(clusterName);
-
-        writer.WriteLine();
-        writer.WriteLine($"##### START {clusterName}");
-        writer.WriteLine("server {");
-        writer.WriteLine($"    listen {ReverseProxyHostPort} ssl;");
-        writer.WriteLine($"    listen [::]:{ReverseProxyHostPort} ssl;");
-        writer.WriteLine("    http2 on;");      
-        writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
-        writer.WriteLine("    ssl_certificate  /etc/certs/fullchain.pem;");
-        writer.WriteLine("    ssl_certificate_key  /etc/certs/privkey.pem;");
-        writer.WriteLine("    location / {");
-        writer.WriteLine($"        proxy_pass https://host.docker.internal:{targetPortHttps};");
-        writer.WriteLine("        proxy_set_header Host $host;");
-        writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
-        writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
-        writer.WriteLine("        proxy_set_header X-Forwarded-Proto $scheme;");
-        writer.WriteLine("    }");
-        writer.WriteLine("}");
-        writer.WriteLine($"##### END {clusterName}");
-        writer.WriteLine();
-        writer.Flush();
-
-        // write the cert secret to the cluster
-        if (_client(clusterName).Get<V1Namespace>("vega") == null)
+        try
         {
-            var ns = new V1Namespace()
+            using var writer = ClearCluster(clusterName);
+            writer.WriteLine();
+            writer.WriteLine($"##### START {clusterName}");
+            writer.WriteLine("server {");
+            writer.WriteLine($"    listen {ReverseProxyHostPort} ssl;");
+            writer.WriteLine($"    listen [::]:{ReverseProxyHostPort} ssl;");
+            writer.WriteLine("    http2 on;");      
+            writer.WriteLine($"    server_name {clusterName}.dev-k8s.cloud;");
+            writer.WriteLine("    ssl_certificate  /etc/certs/fullchain.pem;");
+            writer.WriteLine("    ssl_certificate_key  /etc/certs/privkey.pem;");
+            writer.WriteLine("    location / {");
+            writer.WriteLine($"        proxy_pass https://host.docker.internal:{targetPortHttps};");
+            writer.WriteLine("        proxy_set_header Host $host;");
+            writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
+            writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
+            writer.WriteLine("        proxy_set_header X-Forwarded-Proto $scheme;");
+            writer.WriteLine("    }");
+            writer.WriteLine("}");
+            writer.WriteLine($"##### END {clusterName}");
+            writer.WriteLine();
+            writer.Flush();
+        }
+        catch (Exception e)
+        {
+            _console.WriteWarning($"Error clearing cluster configuration ({NginxConf}): {e.Message}");
+            _console.WriteWarning("Please check the configuration and try again.");
+        }
+        
+        // wait until the namespace vega exists before proceeding with the secrets creation
+        bool nsVegaExists = false;
+        int nTimesWaiting = 0;
+        const int maxTimesWaiting = 60;
+        while (!nsVegaExists && nTimesWaiting < maxTimesWaiting)
+        {
+            if (_client(clusterName).Get<V1Namespace>("vega") == null)
             {
-                Metadata =
-                {
-                    Name = "vega"
-                }
-            };
-            _client(clusterName).Create(ns);
+                nsVegaExists = false;
+                if (nTimesWaiting % 5 == 0)
+                    _console.WriteLine("Namespace 'vega' does not exist yet. Waiting...");
+                Thread.Sleep(5000);
+                nTimesWaiting++;
+            }
+            else
+            {
+                _console.WriteLine("Namespace 'vega' already created by flux.");
+                nsVegaExists = true;
+            }
         }
 
+        if (nTimesWaiting >= maxTimesWaiting)
+        {
+            _console.WriteError("Namespace 'vega' does not exist after waiting. Please check the configuration and try again.");
+            return;
+        }
+        
+        // write the cert secret to the cluster
         var tls = new V1Secret()
         {
             Metadata = new()
