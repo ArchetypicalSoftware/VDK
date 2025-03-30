@@ -130,7 +130,7 @@ public class CreateClusterCommand : Command
             return;
         }
 
-        _flux.Bootstrap(name.ToLower(), "./clusters/default", branch: "initial-readonly");
+        _flux.Bootstrap(name.ToLower(), "./clusters/default", branch: "main");
         try
         {
             _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
