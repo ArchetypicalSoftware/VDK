@@ -1,54 +1,71 @@
-# VDK - Vega Development Kit
+# Vega Development Kit (VDK)
 
-> These are interim notes for internal use. 
+**Develop Kubernetes applications locally with ease using KinD (Kubernetes in Docker).**
 
-## Prerequisites
-> This is only while we are in development phase - Once the repo is public it won't be necessary 
-Run
-```
-echo >> ~/.bashrc && echo "export GITHUB_VDK_TOKEN=<YOUR_GHPAT>" >> ~/.bashrc
-```
+VDK is a Command Line Interface (CLI) tool designed to help developers quickly and securely set up local Kubernetes clusters using [KinD](https://kind.sigs.k8s.io/). It simplifies the process of creating clusters with varying configurations (versions, node counts) to assist in building and testing applications for platforms like Vega.
 
-> Temporary: Before running the first time, run this command Working on integrating this into the process
-```
-echo >> ~/.bashrc && echo "export PATH=\"$PATH:/<PATH_TO_MY_REPO>/.bin\"" >> ~/.bashrc
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE) <!-- Add license badge if applicable -->
+<!-- Add build status, release badges etc. later -->
 
-# ex: echo >> ~/.bashrc && echo "export PATH=\"$PATH:/mnt/d/Code/Archetypical/VDK/.bin\"" >> ~/.bashrc
-```
+## Overview
 
-You may also need to create a secret in the ns flux-system with your GITHUB_VDK_TOKEN.
-``
+Building and testing applications designed for Kubernetes often requires a realistic cluster environment. VDK streamlines the setup of local clusters via KinD, providing commands to:
 
-``
+*   Create single or multi-node Kubernetes clusters.
+*   Specify desired Kubernetes versions.
+*   Manage the lifecycle of these local clusters (list, delete).
+*   Easily integrate with `kubectl`.
 
-> **_NOTE_**: You can run the commands for your own shell script login (e.g .zshrc, .profile). Remember to source it if you dont exit the terminal:
+This tool is particularly useful for developers working on the Vega platform, enabling consistent and reproducible development environments.
 
-```
-source ~/.<your_shell_script_login>
-```
+## Installation
 
-> If you are under Mac OS Sequoia with a corporate security proxy (e.g.: Netskope) you may enconunter the following
-> error when devbox is using nix to install dependencies: error: unable to download 'https://github.com/NixOS/nixpkgs/archive/75a52265bda7fd25e06e3a67dee3f0354e73243c.tar.gz': SSL peer certificate or SSH remote key was not OK (60)
-> To address that issue follow the steps described [here](https://github.com/NixOS/nix/issues/8081#issuecomment-1962419263)
-```
-# First you generate a new bundle containing all your custom certificates to be used by nix
+For detailed installation instructions for your operating system, please refer to the **[Getting Started Guide](./docs/installation/getting-started.md)**.
 
-security export -t certs -f pemseq -k /Library/Keychains/System.keychain -o /tmp/certs-system.pem
-security export -t certs -f pemseq -k /System/Library/Keychains/SystemRootCertificates.keychain -o /tmp/certs-root.pem
-cat /tmp/certs-root.pem /tmp/certs-system.pem > /tmp/ca_cert.pem
-sudo mv /tmp/ca_cert.pem /etc/nix/
+**Prerequisites:**
 
-# Update the conf file /etc/nix/nix.conf to reference the bundle
+*   [Docker](https://docs.docker.com/get-docker/)
+*   [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) (Recommended for interacting with clusters)
 
-ssl-cert-file = /etc/nix/ca_cert.pem
+*For development prerequisites (Devbox/Nix), see the [Getting Started Guide](./docs/installation/getting-started.md).*
 
-# Relaunch the daemon
+## Quick Start
 
-sudo launchctl unload /Library/LaunchDaemons/org.nixos.nix-daemon.plist
-sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist
+1.  **Create a default cluster:**
+    ```bash
+    vdk create cluster
+    ```
+    *(This may take a few minutes)*
 
-```
+2.  **Verify cluster access:**
+    ```bash
+    kubectl cluster-info --context kind-kind
+    ```
 
+3.  **Delete the cluster:**
+    ```bash
+    vdk delete cluster
+    ```
+
+## Usage
+
+For comprehensive usage details, examples, and command references, please see the **Usage Documentation**:
+
+*   **[Creating Clusters](./docs/usage/creating-clusters.md)**
+*   **[Managing Clusters](./docs/usage/managing-clusters.md)**
+*   **[Command Reference](./docs/usage/command-reference.md)**
+
+## Contributing
+
+We welcome contributions! Please read our **[Contribution Guidelines](./docs/contribution/guidelines.md)** and **[Development Setup](./docs/contribution/development-setup.md)** guides to get started.
+
+## Debugging & Troubleshooting
+
+If you encounter issues while using VDK, consult the **[Troubleshooting Guide](./docs/debugging/troubleshooting.md)**.
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details. *(Ensure a LICENSE file exists)*
 
 ## Getting Started
 
@@ -69,5 +86,3 @@ sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist
 If you already have a process listening on your host on port 443, you will have issues with the vega reverse proxy.
 You can either stop the existing process or change the port by defining the environment variable `REVERSE_PROXY_HOST_PORT`. 
 The default port is 443.
-
-
