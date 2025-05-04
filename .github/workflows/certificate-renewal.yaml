@@ -1,0 +1,40 @@
+name: Certbot Renewal
+
+on:
+  schedule:
+    - cron: 0 0 */60 * *
+
+jobs:
+  certbot-renewal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Login to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            -H 'Content-Type: application/json' \
+            -d '{"token": "${CLOUDFLARE_API_TOKEN}"}'
+      - name: Create /tmp/certs directory
+        run: mkdir -p /tmp/certs
+      - name: Run Certbot
+        env:
+          CERTBOT_DOMAINS: dev-k8s.cloud
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL}} 
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RENEWAL_INTERVAL: 0
+          REPLACE_SYMLINKS: true
+        run: |
+          docker run -e CERTBOT_DOMAINS="dev-k8s.cloud" \
+            -e CERTBOT_EMAIL="${CERTBOT_EMAIL}" \
+            -e CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
+            -e RENEWAL_INTERVAL=0 \
+            -e REPLACE_SYMLINKS=true \
+            -v /tmp/certs:/etc/letsencrypt serversideup/certbot-dns-cloudflare:latest
+      - name: Update Certs
+        run: |
+          cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
+          cp /tmp/certs/live/dev-k8s.cloud/fullchain.pem $(pwd)/certs/fullchain.pem
