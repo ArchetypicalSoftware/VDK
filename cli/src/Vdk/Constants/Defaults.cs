@@ -12,7 +12,7 @@ public static class Defaults
     };
 
     public const string ClusterName = "vdk";
-    public const string KubeApiVersion = "1.29";
+    public const string KubeApiVersion = "1.32";
     public const int ControlPlaneNodes = 1;
     public const int WorkerNodes = 2;
 }
