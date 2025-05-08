@@ -1,7 +1,6 @@
 using System.CommandLine;
 using System.IO.Abstractions;
 using Vdk.Constants;
-using Vdk.Data;
 using Vdk.Models;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
@@ -11,18 +10,18 @@ namespace Vdk.Commands;
 public class CreateClusterCommand : Command
 {
     private readonly IConsole _console;
-    private readonly IEmbeddedDataReader _dataReader;
+    private readonly IKindVersionInfoService _kindVersionInfo;
     private readonly IYamlObjectSerializer _yaml;
     private readonly IFileSystem _fileSystem;
     private readonly IKindClient _kind;
     private readonly IFluxClient _flux;
     private readonly IReverseProxyClient _reverseProxy;
 
-    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy)
+    public CreateClusterCommand(IConsole console, IKindVersionInfoService kindVersionInfo, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy)
         : base("cluster", "Create a Vega development cluster")
     {
         _console = console;
-        _dataReader = dataReader;
+        _kindVersionInfo = kindVersionInfo;
         _yaml = yaml;
         _fileSystem = fileSystem;
         _kind = kind;
@@ -41,7 +40,7 @@ public class CreateClusterCommand : Command
 
     public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string kubeVersion = Defaults.KubeApiVersion)
     {
-        var map = _dataReader.ReadJsonObjects<KindVersionMap>("Vdk.Data.KindVersionData.json");
+        var map = await _kindVersionInfo.GetVersionInfoAsync();
         string? kindVersion = null;
         try
         {
@@ -59,6 +58,16 @@ public class CreateClusterCommand : Command
             return;
         }
         var image = map.FindImage(kindVersion, kubeVersion);
+        if (image is null)
+        {
+            // If image is null the most likely cause is that the user has a newly released version of kind and
+            // we have not yet downloaded the latest version info.  To resolve this, we will attempt to circumvent 
+            // the cache timeout by directly calling UpdateAsync() and reloading the map.  If it still doesn't 
+            // find it, then we are truly in an error state.
+            await _kindVersionInfo.UpdateAsync(); 
+            map = await _kindVersionInfo.GetVersionInfoAsync();
+            image = map.FindImage(kindVersion, kubeVersion);
+        }
         if (image == null)
         {
             if (map.FirstOrDefault(m => m.Version == kindVersion) is null)

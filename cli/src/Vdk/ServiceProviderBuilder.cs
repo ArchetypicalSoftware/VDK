@@ -7,6 +7,7 @@ using Vdk.Commands;
 using Vdk.Data;
 using Vdk.Services;
 using System.Runtime.InteropServices;
+using Octokit;
 using Vdk.Constants;
 
 namespace Vdk;
@@ -17,7 +18,7 @@ public static class ServiceProviderBuilder
     {
         var services = new ServiceCollection();
         var yaml = new YamlObjectSerializer();
-
+        var gitHubClient = new GitHubClient(new ProductHeaderValue("vega-client"));
         _ = services
             .AddSingleton<Models.OperatingSystem>(s =>  
             {
@@ -37,10 +38,14 @@ public static class ServiceProviderBuilder
             .AddSingleton<CreateClusterCommand>()
             .AddSingleton<RemoveClusterCommand>()
             .AddSingleton<ListClustersCommand>()
+            .AddSingleton<ListKubernetesVersions>()
             .AddSingleton<CreateProxyCommand>()
             .AddSingleton<RemoveProxyCommand>()
             .AddSingleton<CreateRegistryCommand>()
             .AddSingleton<RemoveRegistryCommand>()
+            .AddSingleton<UpdateCommand>()
+            .AddSingleton<UpdateKindVersionInfoCommand>()
+            .AddSingleton<IKindVersionInfoService, KindVersionInfoService>()
             .AddSingleton<IConsole, SystemConsole>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IShell, SystemShell>()
@@ -50,6 +55,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
             .AddSingleton<IDockerEngine, LocalDockerClient>()
             .AddSingleton<IHubClient,DockerHubClient>()
+            .AddSingleton<IGitHubClient>(gitHubClient)
+            .AddSingleton<GlobalConfiguration>(new GlobalConfiguration())
             .AddTransient<Func<string, IKubernetesClient>>(provider =>
             {
                 return context =>
