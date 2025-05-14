@@ -107,7 +107,12 @@ public class CreateClusterCommand : Command
 
         // add the containerd config patches
         cluster.ContainerdConfigPatches =
-        [
+        [ kindVersion == "0.27.0" ? 
+         @"
+[plugins.""io.containerd.cri.v1.images"".registry]
+  config_path = ""/etc/containerd/certs.d""
+".Trim()
+        :
             @"
 [plugins.""io.containerd.grpc.v1.cri"".registry]
   config_path = ""/etc/containerd/certs.d""
