@@ -1,4 +1,5 @@
-﻿using System.IO.Abstractions;
+﻿using System;
+using System.IO.Abstractions;
 using Octokit;
 using Vdk.Constants;
 using Vdk.Data;
@@ -10,6 +11,7 @@ public class KindVersionInfoService(IConsole console, IFileSystem fileSystem, IG
     IJsonObjectSerializer serializer, GlobalConfiguration configuration) : IKindVersionInfoService
 {
 
+    private KindVersionMap? _cache = null;
     protected string KindVersionInfoFilePath => configuration.KindVersionInfoFilePath;
 
     public async Task<KindVersionMap?> UpdateAsync()
@@ -33,6 +35,7 @@ public class KindVersionInfoService(IConsole console, IFileSystem fileSystem, IG
             {
                 LastUpdated = DateTime.Now
             };
+            _cache = result;
             var json = serializer.Serialize(kindVersions);
             var file = fileSystem.FileInfo.New(KindVersionInfoFilePath);
             if (!file.Directory!.Exists)
@@ -58,8 +61,8 @@ public class KindVersionInfoService(IConsole console, IFileSystem fileSystem, IG
     public async Task<KindVersionMap> GetVersionInfoAsync()
     {
         var file = fileSystem.FileInfo.New(KindVersionInfoFilePath);
-        KindVersionMap? result = null;
-        if (file.Exists)
+        KindVersionMap? result = _cache;
+        if (result is null && file.Exists)
         {
             using (var reader = file.OpenText())
             {
@@ -79,6 +82,14 @@ public class KindVersionInfoService(IConsole console, IFileSystem fileSystem, IG
         }
 
         return result;
+    }
+
+    public async Task<string> GetDefaultKubernetesVersionAsync(string kindVersion)
+    {
+        var map = await GetVersionInfoAsync();
+        var version = map.SingleOrDefault(x => x.Version.Equals(kindVersion, StringComparison.CurrentCultureIgnoreCase))?
+            .Images.OrderByDescending(x => x.SemanticVersion).FirstOrDefault()?.Image ?? Defaults.KubeApiVersion;
+        return version;
     }
 
     private async Task<KindVersionMap> FetchKindVersionsAsync()

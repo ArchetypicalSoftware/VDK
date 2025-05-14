@@ -38,7 +38,7 @@ public class CreateClusterCommand : Command
         this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion);
     }
 
-    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string kubeVersion = Defaults.KubeApiVersion)
+    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null)
     {
         var map = await _kindVersionInfo.GetVersionInfoAsync();
         string? kindVersion = null;
@@ -51,12 +51,12 @@ public class CreateClusterCommand : Command
             _console.WriteError($"Unable to retrieve the installed kind version. {ex.Message}");
             return;
         }
-
         if (string.IsNullOrWhiteSpace(kindVersion))
         {
             _console.WriteWarning($"Kind version {kindVersion} is not supported by the current VDK.");
             return;
         }
+        var kubeVersion = kubeVersionRequested ?? await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion);
         var image = map.FindImage(kindVersion, kubeVersion);
         if (image is null)
         {
