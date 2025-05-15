@@ -87,8 +87,13 @@ public class KindVersionInfoService(IConsole console, IFileSystem fileSystem, IG
     public async Task<string> GetDefaultKubernetesVersionAsync(string kindVersion)
     {
         var map = await GetVersionInfoAsync();
-        var version = map.SingleOrDefault(x => x.Version.Equals(kindVersion, StringComparison.CurrentCultureIgnoreCase))?
-            .Images.OrderByDescending(x => x.SemanticVersion).FirstOrDefault()?.Image ?? Defaults.KubeApiVersion;
+
+        var kubeVersion = map.SingleOrDefault(x => x.Version.Equals(kindVersion, StringComparison.CurrentCultureIgnoreCase))?
+            .Images.OrderByDescending(x => x.SemanticVersion).FirstOrDefault();
+
+        if (kubeVersion == null) return Defaults.KubeApiVersion;
+
+        var version = $"{kubeVersion.SemanticVersion.Major}.{kubeVersion.SemanticVersion.Minor}";
         return version;
     }
 
