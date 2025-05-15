@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [x64, x86, arm, arm64]
+        rid: [linux-x64, linux-arm, linux-arm64, linux-musl-x64, linux-musl-arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
 
       - name: Publish Linux Build
         run: |
-          RUNTIME_ID=linux-${{ matrix.arch }}
+          RUNTIME_ID=${{ matrix.rid }}
           OUTPUT_DIR=./packages/build/${RUNTIME_ID}
           ARTIFACT=vega-${RUNTIME_ID}.tar.gz
           dotnet publish ./cli/src/Vdk/Vdk.csproj -o $OUTPUT_DIR -r $RUNTIME_ID -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
@@ -58,8 +58,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.arch }}-tarball
-          path: ./artifacts/vega-linux-${{ matrix.arch }}.tar.gz
+          name: ${{ matrix.rid }}-tarball
+          path: ./artifacts/vega-${{ matrix.rid }}.tar.gz
 
   release:
     needs: build
