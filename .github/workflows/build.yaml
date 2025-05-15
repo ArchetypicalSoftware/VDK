@@ -51,7 +51,7 @@ jobs:
           dotnet publish ./cli/src/Vdk/Vdk.csproj -o $OUTPUT_DIR -r $RUNTIME_ID -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
           mkdir -p $OUTPUT_DIR/ConfigMounts
           mkdir -p $OUTPUT_DIR/Certs
-          cp -r ./Certs $OUTPUT_DIRs
+          cp -r ./Certs $OUTPUT_DIR
           cp ./cli/src/Vdk/ConfigMounts/hosts.toml $OUTPUT_DIR/ConfigMounts/
           tar -czvf ./artifacts/$ARTIFACT -C $OUTPUT_DIR .
 
