@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, x86, arm, arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,7 +24,6 @@ jobs:
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 0.1.0 # Optional fallback tag to use when no tag can be found
-          #workingDirectory: another/path/where/a/git/repo/is/checked/out # Optional alternative working directory
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -40,44 +42,35 @@ jobs:
       - name: Install Zip Utility
         run: sudo apt-get install -y zip && mkdir -p ./artifacts
 
-
-      - name: Publish Linux Build (x64)
+      - name: Publish Linux Build
         run: |
-          dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-          mkdir -p ./packages/build/linux-x64/ConfigMounts
-          mkdir -p ./packages/build/linux-x64/Certs
-          cp -r ./Certs ./packages/build/linux-x64/Certs
-          cp ./cli/src/Vdk/ConfigMounts/hosts.toml ./packages/build/linux-x64/ConfigMounts/
-          tar -czvf ./artifacts/vega-linux-x64.tar.gz -C ./packages/build/linux-x64 .
+          RUNTIME_ID=linux-${{ matrix.arch }}
+          OUTPUT_DIR=./packages/build/${RUNTIME_ID}
+          ARTIFACT=vega-${RUNTIME_ID}.tar.gz
+          dotnet publish ./cli/src/Vdk/Vdk.csproj -o $OUTPUT_DIR -r $RUNTIME_ID -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+          mkdir -p $OUTPUT_DIR/ConfigMounts
+          mkdir -p $OUTPUT_DIR/Certs
+          cp -r ./Certs $OUTPUT_DIR/Certs
+          cp ./cli/src/Vdk/ConfigMounts/hosts.toml $OUTPUT_DIR/ConfigMounts/
+          tar -czvf ./artifacts/$ARTIFACT -C $OUTPUT_DIR .
 
-      - name: Publish Linux Build (x86)
-        run: |
-          dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-x86 -r linux-x86 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-          mkdir -p ./packages/build/linux-x86/ConfigMounts
-          mkdir -p ./packages/build/linux-x86/Certs
-          cp -r ./Certs ./packages/build/linux-x86/Certs
-          cp ./cli/src/Vdk/ConfigMounts/hosts.toml ./packages/build/linux-x86/ConfigMounts/
-          tar -czvf ./artifacts/vega-linux-x86.tar.gz -C ./packages/build/linux-x86 .
-
-      - name: Publish Linux Build (arm)
-        run: |
-          dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-arm -r linux-arm -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-          mkdir -p ./packages/build/linux-arm/ConfigMounts
-          mkdir -p ./packages/build/linux-arm/Certs
-          cp -r ./Certs ./packages/build/linux-arm/Certs
-          cp ./cli/src/Vdk/ConfigMounts/hosts.toml ./packages/build/linux-arm/ConfigMounts/
-          tar -czvf ./artifacts/vega-linux-arm.tar.gz -C ./packages/build/linux-arm .
-
-      - name: Publish Linux Build (arm64)
-        run: |
-          dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-arm64 -r linux-arm64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-          mkdir -p ./packages/build/linux-arm64/ConfigMounts
-          mkdir -p ./packages/build/linux-arm64/Certs
-          cp -r ./Certs ./packages/build/linux-arm64/Certs
-          cp ./cli/src/Vdk/ConfigMounts/hosts.toml ./packages/build/linux-arm64/ConfigMounts/
-          tar -czvf ./artifacts/vega-linux-arm64.tar.gz -C ./packages/build/linux-arm64 .
-
-
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get Version Tag
+        id: previoustag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 0.1.0
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
       - name: Create Release
         run: |
           gh release create ${{ steps.previoustag.outputs.tag }} \
