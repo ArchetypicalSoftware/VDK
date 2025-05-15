@@ -2,6 +2,7 @@ name: Build-Test-And-Publish
 permissions:
   contents: write
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - Bump-and-Tag-Semantic-Version
