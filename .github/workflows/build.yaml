@@ -80,9 +80,19 @@ jobs:
           path: ./artifacts
       - name: Create Release
         run: |
+          # Collect matching files in the artifacts directory
+          FILES=$(find ./artifacts -type f -name '*.*')
+          
+          # Check if any files are found
+          if [ -z "$FILES" ]; then
+              echo "Error: No files found in ./artifacts directory to upload."
+              exit 1
+          fi
+          
+          # Create the release with the collected files
           gh release create ${{ steps.previoustag.outputs.tag }} \
             --title "Release v${{ steps.previoustag.outputs.tag }}" \
             --notes "This is the release for version ${{ steps.previoustag.outputs.tag }}" \
-            ./artifacts/*.*
+            $FILES
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
