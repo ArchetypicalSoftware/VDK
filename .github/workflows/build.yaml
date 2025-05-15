@@ -54,6 +54,12 @@ jobs:
           cp ./cli/src/Vdk/ConfigMounts/hosts.toml $OUTPUT_DIR/ConfigMounts/
           tar -czvf ./artifacts/$ARTIFACT -C $OUTPUT_DIR .
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.arch }}-tarball
+          path: ./artifacts/vega-linux-${{ matrix.arch }}.tar.gz
+
   release:
     needs: build
     runs-on: ubuntu-latest
