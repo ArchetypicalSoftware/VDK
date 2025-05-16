@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
 
@@ -18,7 +18,14 @@ public class RemoveProxyCommand: Command
 
     public Task InvokeAsync()
     {
-        _client.Delete();
+        try
+        {
+            _client.Delete();
+        }
+        catch (Exception ex)
+        {
+            _console.WriteError("Error removing proxy: {0}", ex.Message);
+        }
         return Task.CompletedTask;
     }
 }

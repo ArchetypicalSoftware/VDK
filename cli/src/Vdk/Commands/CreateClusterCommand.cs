@@ -4,6 +4,9 @@ using Vdk.Constants;
 using Vdk.Data;
 using Vdk.Models;
 using Vdk.Services;
+using k8s.Models;
+using System.Diagnostics;
+using KubeOps.KubernetesClient;
 using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
@@ -17,8 +20,9 @@ public class CreateClusterCommand : Command
     private readonly IKindClient _kind;
     private readonly IFluxClient _flux;
     private readonly IReverseProxyClient _reverseProxy;
+    private readonly Func<string, IKubernetesClient> _kubeClient;
 
-    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy)
+    public CreateClusterCommand(IConsole console, IEmbeddedDataReader dataReader, IYamlObjectSerializer yaml, IFileSystem fileSystem, IKindClient kind, IFluxClient flux, IReverseProxyClient reverseProxy, Func<string, IKubernetesClient> kubeClient)
         : base("cluster", "Create a Vega development cluster")
     {
         _console = console;
@@ -28,6 +32,7 @@ public class CreateClusterCommand : Command
         _kind = kind;
         _flux = flux;
         _reverseProxy = reverseProxy;
+        _kubeClient = kubeClient;
         var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
         var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
         var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
@@ -41,6 +46,17 @@ public class CreateClusterCommand : Command
 
     public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string kubeVersion = Defaults.KubeApiVersion)
     {
+        // Ensure config exists and prompt if not
+        var config = ConfigManager.EnsureConfig(
+            promptTenantId: () => {
+                _console.Write("Tenant GUID: ");
+                return Console.ReadLine();
+            },
+            openBrowser: () => {
+                var url = "https://archetypical.software/register";
+                try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
+            });
+
         var map = _dataReader.ReadJsonObjects<KindVersionMap>("Vdk.Data.KindVersionData.json");
         string? kindVersion = null;
         try
@@ -136,6 +152,8 @@ public class CreateClusterCommand : Command
         }
 
         _flux.Bootstrap(name.ToLower(), "./clusters/default", branch: "main");
+
+        
         try
         {
             _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
