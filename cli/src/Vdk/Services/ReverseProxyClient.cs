@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using Docker.DotNet.Models;
 using k8s.Models;
 using KubeOps.KubernetesClient;
+using System.Xml.Linq;
 using Vdk.Constants;
 using Vdk.Models;
 
@@ -155,24 +158,24 @@ internal class ReverseProxyClient : IReverseProxyClient
         const int maxTimesWaiting = 60;
         while (!nsVegaExists && nTimesWaiting < maxTimesWaiting)
         {
-            if (_client(clusterName).Get<V1Namespace>("vega") == null)
+            if (_client(clusterName).Get<V1Namespace>("vega-system") == null)
             {
                 nsVegaExists = false;
                 if (nTimesWaiting % 5 == 0)
-                    _console.WriteLine("Namespace 'vega' does not exist yet. Waiting...");
+                    _console.WriteLine("Namespace 'vega-system' does not exist yet. Waiting...");
                 Thread.Sleep(5000);
                 nTimesWaiting++;
             }
             else
             {
-                _console.WriteLine("Namespace 'vega' already created by flux.");
+                _console.WriteLine("Namespace 'vega-system' already created by flux.");
                 nsVegaExists = true;
             }
         }
 
         if (nTimesWaiting >= maxTimesWaiting)
         {
-            _console.WriteError("Namespace 'vega' does not exist after waiting. Please check the configuration and try again.");
+            _console.WriteError("Namespace 'vega-system' does not exist after waiting. Please check the configuration and try again.");
             return;
         }
         
@@ -182,7 +185,7 @@ internal class ReverseProxyClient : IReverseProxyClient
             Metadata = new()
             {
                 Name = "dev-tls",
-                NamespaceProperty = "vega"
+                NamespaceProperty = "vega-system"
             },
             Type = "kubernetes.io/tls",
             Data = new Dictionary<string, byte[]>
@@ -191,10 +194,40 @@ internal class ReverseProxyClient : IReverseProxyClient
                 { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
             }
         };
-        if (_client(clusterName).Get<V1Secret>("dev-tls", "vega") == null)
+        if (_client(clusterName).Get<V1Secret>("dev-tls", "vega-system") == null)
         {
             _console.WriteLine("Creating vega secret");
             _client(clusterName).Create(tls);    
+        }
+        // Create ConfigMap after Flux bootstrap
+        var config = ConfigManager.EnsureConfig(
+            promptTenantId: () => {
+                _console.Write("Tenant GUID: ");
+                return Console.ReadLine();
+            },
+            openBrowser: () => {
+                var url = "https://archetypical.software/register";
+                try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
+            });
+        var configMap = KubernetesConfigMapHelper.CreateClusterInfoConfigMap(config.TenantId, config.Env);
+        try
+        {
+            var kubeClient = _client(clusterName);
+            var existing = kubeClient.Get<V1ConfigMap>("cluster-info", "vega-system");
+            if (existing == null)
+            {
+                kubeClient.Create(configMap);
+                _console.WriteLine("Created ConfigMap 'cluster-info' in namespace 'vega-system'.");
+            }
+            else
+            {
+                kubeClient.Update(configMap);
+                _console.WriteLine("Updated ConfigMap 'cluster-info' in namespace 'vega-system'.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _console.WriteError($"Failed to create/update ConfigMap: {ex.Message}");
         }
 
         ReloadConfigs();
