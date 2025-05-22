@@ -21,6 +21,11 @@ jobs:
             -d '{"token": "${CLOUDFLARE_API_TOKEN}"}'
       - name: Create /tmp/certs directory
         run: mkdir -p /tmp/certs
+      - name: Create and set permissions for /etc/letsencrypt
+        run: |
+          sudo mkdir -p /etc/letsencrypt
+          sudo chown $(whoami):$(whoami) /etc/letsencrypt
+          sudo chmod 755 /etc/letsencrypt
       - name: Run Certbot
         env:
           CERTBOT_DOMAINS: dev-k8s.cloud
@@ -35,6 +40,7 @@ jobs:
             -e RENEWAL_INTERVAL=0 \
             -e REPLACE_SYMLINKS=true \
             -v /tmp/certs:/etc/letsencrypt serversideup/certbot-dns-cloudflare:latest
+            -v /etc/letsencrypt:/etc/letsencrypt
       - name: Copy renewed certificates to repository
         run: |
           cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
