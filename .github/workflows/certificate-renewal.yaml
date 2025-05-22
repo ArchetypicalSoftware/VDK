@@ -19,17 +19,15 @@ jobs:
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             -H 'Content-Type: application/json' \
             -d '{"token": "${CLOUDFLARE_API_TOKEN}"}'
-      - name: Create /tmp/certs directory
-        run: mkdir -p /tmp/certs
-      - name: Create and set permissions for /etc/letsencrypt
+      - name: Create and set permissions for /tmp/certs
         run: |
-          sudo mkdir -p /etc/letsencrypt
-          sudo chown $(whoami):$(whoami) /etc/letsencrypt
-          sudo chmod 755 /etc/letsencrypt
+          sudo mkdir -p /tmp/certs
+          sudo chown $(whoami):$(whoami) /tmp/certs
+          sudo chmod 755 /tmp/certs
           # Ensure existing directory permissions are corrected
-          if [ -d "/etc/letsencrypt" ]; then
-            sudo chown $(whoami):$(whoami) /etc/letsencrypt
-            sudo chmod 755 /etc/letsencrypt
+          if [ -d "/tmp/certs" ]; then
+            sudo chown $(whoami):$(whoami) /tmp/certs
+            sudo chmod 755 /tmp/certs
           fi
       - name: Run Certbot
         env:
@@ -44,8 +42,7 @@ jobs:
             -e CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
             -e RENEWAL_INTERVAL=0 \
             -e REPLACE_SYMLINKS=true \
-            -v /tmp/certs:/etc/letsencrypt \
-            -v /etc/letsencrypt:/etc/letsencrypt \
+            -v /tmp/certs:/etc/letsencrypt  
             serversideup/certbot-dns-cloudflare:latest
       - name: Copy renewed certificates to repository
         run: |
