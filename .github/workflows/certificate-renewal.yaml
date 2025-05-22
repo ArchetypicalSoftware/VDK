@@ -1,15 +1,16 @@
 name: Certbot Renewal
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: 0 0 */60 * *
+    - cron: '0 0 1 * *'
 
 jobs:
   certbot-renewal:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Login to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -42,10 +43,13 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Commit and Push Changes
+      - name: Create Pull Request for Cert Updates
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          BRANCH=certbot-update-$(date +'%Y%m%d-%H%M%S')
+          git checkout -b $BRANCH
           git add certs/
           git commit -m "Update certificates [skip ci]" || echo "No changes to commit"
-          git push origin $(git rev-parse --abbrev-ref HEAD)
+          git push origin $BRANCH
+          gh pr create --title "Update certificates" --body "Automated certificate renewal PR." --head $BRANCH --base $(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') --fill
