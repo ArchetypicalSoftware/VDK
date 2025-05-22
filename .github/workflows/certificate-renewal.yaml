@@ -39,6 +39,10 @@ jobs:
             -e REPLACE_SYMLINKS=false \
             -v /tmp/certs:/etc/letsencrypt \
             serversideup/certbot-dns-cloudflare:latest
+      - name: Fix permissions on renewed certificates
+        run: |
+          sudo chown -R $(whoami):$(whoami) /tmp/certs
+          sudo chmod -R a+r /tmp/certs
       - name: Copy renewed certificates to repository
         run: |
           cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
