@@ -22,13 +22,7 @@ jobs:
       - name: Create and set permissions for /tmp/certs
         run: |
           sudo mkdir -p /tmp/certs
-          sudo chown $(whoami):$(whoami) /tmp/certs
-          sudo chmod 0755 /tmp/certs
-          # Ensure existing directory permissions are corrected
-          if [ -d "/tmp/certs" ]; then
-            sudo chown $(whoami):$(whoami) /tmp/certs
-            sudo chmod 0755 /tmp/certs
-          fi
+          sudo chmod 0777 /tmp/certs
       - name: Run Certbot
         env:
           CERTBOT_DOMAINS: dev-k8s.cloud
