@@ -42,7 +42,7 @@ jobs:
             -e CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
             -e RENEWAL_INTERVAL=0 \
             -e REPLACE_SYMLINKS=true \
-            -v /tmp/certs:/etc/letsencrypt  
+            -v /tmp/certs:/etc/letsencrypt \
             serversideup/certbot-dns-cloudflare:latest
       - name: Copy renewed certificates to repository
         run: |
