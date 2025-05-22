@@ -43,6 +43,8 @@ jobs:
         run: |
           sudo chown -R $(whoami):$(whoami) /tmp/certs
           sudo chmod -R a+r /tmp/certs
+      - name: Ensure certs directory exists
+        run: mkdir -p $(pwd)/certs
       - name: Copy renewed certificates to repository
         run: |
           cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
