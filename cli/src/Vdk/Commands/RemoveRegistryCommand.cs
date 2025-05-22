@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
 
@@ -18,7 +18,14 @@ public class RemoveRegistryCommand: Command
 
     public Task InvokeAsync()
     {
-        _client.Destroy();
+        try
+        {
+            _client.Destroy();
+        }
+        catch (Exception ex)
+        {
+            _console.WriteError("Error removing registry: {0}", ex.Message);
+        }
         return Task.CompletedTask;
     }
 }
