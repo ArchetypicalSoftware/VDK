@@ -23,11 +23,11 @@ jobs:
         run: |
           sudo mkdir -p /tmp/certs
           sudo chown $(whoami):$(whoami) /tmp/certs
-          sudo chmod 0o755 /tmp/certs
+          sudo chmod 0755 /tmp/certs
           # Ensure existing directory permissions are corrected
           if [ -d "/tmp/certs" ]; then
             sudo chown $(whoami):$(whoami) /tmp/certs
-            sudo chmod 0o755 /tmp/certs
+            sudo chmod 0755 /tmp/certs
           fi
       - name: Run Certbot
         env:
