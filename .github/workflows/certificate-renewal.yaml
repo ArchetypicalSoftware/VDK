@@ -38,3 +38,14 @@ jobs:
         run: |
           cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
           cp /tmp/certs/live/dev-k8s.cloud/fullchain.pem $(pwd)/certs/fullchain.pem
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Commit and Push Changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add certs/
+          git commit -m "Update certificates [skip ci]" || echo "No changes to commit"
+          git push origin $(git rev-parse --abbrev-ref HEAD)
