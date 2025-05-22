@@ -35,7 +35,7 @@ jobs:
             -e RENEWAL_INTERVAL=0 \
             -e REPLACE_SYMLINKS=true \
             -v /tmp/certs:/etc/letsencrypt serversideup/certbot-dns-cloudflare:latest
-      - name: Update Certs
+      - name: Copy renewed certificates to repository
         run: |
           cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
           cp /tmp/certs/live/dev-k8s.cloud/fullchain.pem $(pwd)/certs/fullchain.pem
