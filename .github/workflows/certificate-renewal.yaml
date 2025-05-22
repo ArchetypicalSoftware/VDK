@@ -26,6 +26,11 @@ jobs:
           sudo mkdir -p /etc/letsencrypt
           sudo chown $(whoami):$(whoami) /etc/letsencrypt
           sudo chmod 755 /etc/letsencrypt
+          # Ensure existing directory permissions are corrected
+          if [ -d "/etc/letsencrypt" ]; then
+            sudo chown $(whoami):$(whoami) /etc/letsencrypt
+            sudo chmod 755 /etc/letsencrypt
+          fi
       - name: Run Certbot
         env:
           CERTBOT_DOMAINS: dev-k8s.cloud
