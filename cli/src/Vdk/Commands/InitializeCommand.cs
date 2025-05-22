@@ -22,10 +22,10 @@ public class InitializeCommand : Command
         _createRegistry = createRegistry;
         _kind = kind;
         _console = console;
-        this.SetHandler(InvokeAsync);
+        this.SetHandler((bool bypassPrompt) => InvokeAsync(bypassPrompt), new Option<bool>("--bypassPrompt", () => false, "Bypass the tenant prompt (for tests)"));
     }
 
-    public async Task InvokeAsync()
+    public async Task InvokeAsync(bool bypassPrompt = false)
     {
         // Ensure config exists and prompt if not
         var config = ConfigManager.EnsureConfig(
@@ -36,7 +36,8 @@ public class InitializeCommand : Command
             openBrowser: () => {
                 var url = "https://archetypical.software/register";
                 try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
-            });
+            },
+            bypassPrompt: bypassPrompt);
 
         var name = Defaults.ClusterName;
         var controlPlaneNodes = 1;

@@ -41,10 +41,11 @@ public class CreateClusterCommand : Command
         AddOption(controlNodes);
         AddOption(workers);
         AddOption(kubeVersion);
-        this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion);
+        this.SetHandler((string name, int controlPlaneNodes, int workerNodes, string kubeVersion, bool bypassPrompt) => InvokeAsync(name, controlPlaneNodes, workerNodes, kubeVersion, bypassPrompt),
+            nameOption, controlNodes, workers, kubeVersion, new Option<bool>("--bypassPrompt", () => false, "Bypass the tenant prompt (for tests)"));
     }
 
-    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string kubeVersion = Defaults.KubeApiVersion)
+    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string kubeVersion = Defaults.KubeApiVersion, bool bypassPrompt = false)
     {
         // Ensure config exists and prompt if not
         var config = ConfigManager.EnsureConfig(
@@ -55,7 +56,8 @@ public class CreateClusterCommand : Command
             openBrowser: () => {
                 var url = "https://archetypical.software/register";
                 try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
-            });
+            },
+            bypassPrompt: bypassPrompt);
 
         var map = _dataReader.ReadJsonObjects<KindVersionMap>("Vdk.Data.KindVersionData.json");
         string? kindVersion = null;

@@ -36,14 +36,26 @@ namespace Vdk.Services
             File.WriteAllText(ConfigPath, json);
         }
 
-        public static VdkConfig EnsureConfig(Func<string?> promptTenantId, Action openBrowser)
+        public static VdkConfig EnsureConfig(Func<string?> promptTenantId, Action openBrowser, bool bypassPrompt = false)
         {
+            if (bypassPrompt)
+            {
+                return new VdkConfig { TenantId = "test-tenant-id", Env = "Test" };
+            }
+            // Bypass tenant prompt for unit tests
+            var testMode = Environment.GetEnvironmentVariable("VDK_TEST_MODE");
+            if (!string.IsNullOrEmpty(testMode) && testMode.Equals("1"))
+            {
+                return new VdkConfig { TenantId = "test-tenant-id", Env = "Test" };
+            }
             var config = LoadConfig();
             if (config != null && !string.IsNullOrWhiteSpace(config.TenantId))
                 return config;
 
             while (true)
             {
+                // (Normal prompt logic continues here)
+
                 Console.WriteLine("Enter your Tenant GUID (or leave blank to create an account):");
                 var input = promptTenantId();
                 if (string.IsNullOrWhiteSpace(input))

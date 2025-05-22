@@ -39,7 +39,7 @@ public class CreateClusterCommandTests : CommandTestBase
     {
         _mockKind.Setup(k => k.GetVersion()).Throws(new Exception("fail-version"));
         var cmd = CreateCommand();
-        await cmd.InvokeAsync();
+        await cmd.InvokeAsync(bypassPrompt: true);
         MockConsole.Verify(c => c.WriteError(It.Is<string>(msg => msg.Contains("Unable to retrieve the installed kind version."))), Times.Once);
     }
 
@@ -49,7 +49,7 @@ public class CreateClusterCommandTests : CommandTestBase
         _mockKind.Setup(k => k.GetVersion()).Returns((string)null);
         _mockDataReader.Setup(d => d.ReadJsonObjects<KindVersionMap>(It.IsAny<string>())).Returns(new KindVersionMap());
         var cmd = CreateCommand();
-        await cmd.InvokeAsync();
+        await cmd.InvokeAsync(bypassPrompt: true);
         // The implementation writes a warning, not an error, for null/empty version
         MockConsole.Verify(c => c.WriteWarning(It.IsAny<string>()), Times.Once);
     }
@@ -69,7 +69,7 @@ public class CreateClusterCommandTests : CommandTestBase
         fileInfoMock.Setup(f => f.FullName).Returns("ConfigMounts/hosts.toml");
         _mockFileSystem.Setup(f => f.FileInfo.New("ConfigMounts/hosts.toml")).Returns(fileInfoMock.Object);
         var cmd = CreateCommand();
-        await Assert.ThrowsAsync<Exception>(() => cmd.InvokeAsync("test", 1, 2, "1.29"));
+        await Assert.ThrowsAsync<Exception>(() => cmd.InvokeAsync("test", 1, 2, "1.29", bypassPrompt: true));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class CreateClusterCommandTests : CommandTestBase
         // This is handled internally by the command; no need to mock _kind.GetNodes
         // Patch the test to simulate no nodes with ExtraPortMappings by passing 0 for both controlPlaneNodes and workerNodes
         var cmd = CreateCommand();
-        await cmd.InvokeAsync("test", 0, 0, "1.29"); // No nodes created
+        await cmd.InvokeAsync("test", 0, 0, "1.29", bypassPrompt: true); // No nodes created
         MockConsole.Verify(c => c.WriteError(It.Is<string>(msg => msg.Contains("Unable to find the master node"))), Times.Once);
     }
 
@@ -113,7 +113,7 @@ public class CreateClusterCommandTests : CommandTestBase
         _mockFlux.Setup(f => f.Bootstrap(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Verifiable();
         _mockReverseProxy.Setup(r => r.UpsertCluster(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).Throws(new Exception("fail-proxy"));
         var cmd = CreateCommand();
-        await Assert.ThrowsAsync<Exception>(() => cmd.InvokeAsync("test", 1, 2, "1.29"));
+        await Assert.ThrowsAsync<Exception>(() => cmd.InvokeAsync("test", 1, 2, "1.29", bypassPrompt: true));
         MockConsole.Verify(c => c.WriteLine(It.IsAny<string>()), Times.AtLeastOnce); // stack trace
         MockConsole.Verify(c => c.WriteError(It.Is<string>(msg => msg.Contains("Failed to update reverse proxy"))), Times.Once);
     }
@@ -137,7 +137,7 @@ public class CreateClusterCommandTests : CommandTestBase
         _mockFlux.Setup(f => f.Bootstrap(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Verifiable();
         _mockReverseProxy.Setup(r => r.UpsertCluster(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).Verifiable();
         var cmd = CreateCommand();
-        await cmd.InvokeAsync("test", 1, 2, "1.29");
+        await cmd.InvokeAsync("test", 1, 2, "1.29", bypassPrompt: true);
         _mockKind.VerifyAll();
         _mockFlux.VerifyAll();
         _mockReverseProxy.VerifyAll();
