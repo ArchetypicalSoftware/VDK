@@ -51,8 +51,8 @@ jobs:
         run: mkdir -p $(pwd)/certs
       - name: Copy renewed certificates to repository
         run: |
-          cp /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/certs/privkey.pem
-          cp /tmp/certs/live/dev-k8s.cloud/fullchain.pem $(pwd)/certs/fullchain.pem
+          cp -f /tmp/certs/live/dev-k8s.cloud/privkey.pem $(pwd)/Certs/privkey.pem 
+          cp -f /tmp/certs/live/dev-k8s.cloud/fullchain.pem $(pwd)/Certs/fullchain.pem
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
