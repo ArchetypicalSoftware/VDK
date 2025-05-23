@@ -2,6 +2,7 @@ name: Build-Test-And-Publish
 permissions:
   contents: write
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - Bump-and-Tag-Semantic-Version
@@ -10,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rid: [linux-x64, linux-arm, linux-arm64, linux-musl-x64, linux-musl-arm64, osx-x64, osx-arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,7 +25,6 @@ jobs:
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 0.1.0 # Optional fallback tag to use when no tag can be found
-          #workingDirectory: another/path/where/a/git/repo/is/checked/out # Optional alternative working directory
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -40,32 +43,56 @@ jobs:
       - name: Install Zip Utility
         run: sudo apt-get install -y zip && mkdir -p ./artifacts
 
-      # - name: Publish Windows Build
-      #   run: |
-      #     dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/win-x64 -r win-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-      #     zip -r ./artifacts/vega-win-x64.zip ./packages/build/win-x64/vega.exe
-
       - name: Publish Linux Build
         run: |
-          dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-          tar -czvf ./artifacts/vega-linux-x64.tar.gz ./packages/build/linux-x64/vega
+          RUNTIME_ID=${{ matrix.rid }}
+          OUTPUT_DIR=./packages/build/${RUNTIME_ID}
+          ARTIFACT=vega-${RUNTIME_ID}.tar.gz
+          dotnet publish ./cli/src/Vdk/Vdk.csproj -o $OUTPUT_DIR -r $RUNTIME_ID -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
+          mkdir -p $OUTPUT_DIR/ConfigMounts
+          mkdir -p $OUTPUT_DIR/Certs
+          cp -r ./Certs $OUTPUT_DIR
+          cp ./cli/src/Vdk/ConfigMounts/hosts.toml $OUTPUT_DIR/ConfigMounts/
+          tar -czvf ./artifacts/$ARTIFACT -C $OUTPUT_DIR .
 
-      # - name: Publish OSX Build
-      #   run: |
-      #     dotnet publish ./cli/src/Vdk/Vdk.csproj -o ./packages/build/osx-x64 -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-      #     tar -czvf ./artifacts/vega-osx-x64.tar.gz ./packages/build/osx-x64/vega
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}-tarball
+          path: ./artifacts/vega-${{ matrix.rid }}.tar.gz
 
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get Version Tag
+        id: previoustag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 0.1.0
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
       - name: Create Release
         run: |
+          # Collect matching files in the artifacts directory
+          FILES=$(find ./artifacts -type f -name '*.*')
+          
+          # Check if any files are found
+          if [ -z "$FILES" ]; then
+              echo "Error: No files found in ./artifacts directory to upload."
+              exit 1
+          fi
+          
+          # Create the release with the collected files
           gh release create ${{ steps.previoustag.outputs.tag }} \
             --title "Release v${{ steps.previoustag.outputs.tag }}" \
             --notes "This is the release for version ${{ steps.previoustag.outputs.tag }}" \
-            ./artifacts/*.*
+            $FILES
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-# dotnet publish ./src/Vdk/Vdk.csproj -o ../packages/build/win-x64 -r win-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-
-# dotnet publish ./src/Vdk/Vdk.csproj -o ../packages/build/linux-x64 -r linux-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
-
-# dotnet publish ./src/Vdk/Vdk.csproj -o ../packages/build/osx-x64 -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishReadyToRunShowWarnings=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:selfcontained=true
