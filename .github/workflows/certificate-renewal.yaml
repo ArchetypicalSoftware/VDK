@@ -59,11 +59,12 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Create Pull Request for Cert Updates
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           BRANCH=certbot-update-$(date +'%Y%m%d-%H%M%S')
           git checkout -b $BRANCH
           git add certs/
           git commit -m "Update certificates [skip ci]" || echo "No changes to commit"
-          git push origin $BRANCH
+          git push https://x-access-token:${GH_PAT}@github.com/ArchetypicalSoftware/VDK.git $BRANCH
           gh pr create --title "Update certificates" --body "Automated certificate renewal PR." --head $BRANCH --base $(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') --fill
