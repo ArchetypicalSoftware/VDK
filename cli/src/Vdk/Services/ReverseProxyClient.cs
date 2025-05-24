@@ -74,8 +74,8 @@ internal class ReverseProxyClient : IReverseProxyClient
             {
                 _console.WriteWarning($" - Reverse proxy configuration for {conf.FullName} exists, skipping creation of file. Ensure it has the right values.");
             }
-            var fullChain = new FileInfo("Certs/fullchain.pem");
-            var privKey = new FileInfo("Certs/privkey.pem");
+            var fullChain = new FileInfo(Path.Combine(".bin", "Certs", "fullchain.pem"));
+            var privKey = new FileInfo(Path.Combine(".bin", "Certs", "privkey.pem"));
             try
             {
                 _docker.Run(Containers.ProxyImage, Containers.ProxyName,

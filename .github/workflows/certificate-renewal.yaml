@@ -36,7 +36,7 @@ jobs:
           RENEWAL_INTERVAL: 0
           REPLACE_SYMLINKS:  false
         run: |
-          docker run -e CERTBOT_DOMAINS="dev-k8s.cloud" \
+          docker run -e CERTBOT_DOMAINS="dev-k8s.cloud,*.dev-k8s.cloud" \
             -e CERTBOT_EMAIL="${CERTBOT_EMAIL}" \
             -e CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
             -e RENEWAL_INTERVAL=0 \
