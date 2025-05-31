@@ -94,11 +94,11 @@ public class KindVersionMapTests
     [InlineData("0.12.0", "1.16", "kindest/node:v1.16.15@sha256:64bac16b83b6adfd04ea3fbcf6c9b5b893277120f2b2cbf9f5fa3e5d4c2260cc")]
     [InlineData("0.12.0", "1.15", "kindest/node:v1.15.12@sha256:9dfc13db6d3fd5e5b275f8c4657ee6a62ef9cb405546664f2de2eabcfd6db778")]
     [InlineData("0.12.0", "1.14", "kindest/node:v1.14.10@sha256:b693339da2a927949025869425e20daf80111ccabf020d4021a23c00bae29d82")]
-    [InlineData("0.11.1", "1.21", "kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6")]
+    [InlineData("0.11.1", "1.21", "kindest/node:v1.21.1@sha256:fae9a58f17f18f06aeac9772ca8b5ac680ebbed985e266f711d936e91d113bad")]
     [InlineData("0.11.1", "1.20", "kindest/node:v1.20.7@sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9")]
     [InlineData("0.11.1", "1.19", "kindest/node:v1.19.11@sha256:07db187ae84b4b7de440a73886f008cf903fcf5764ba8106a9fd5243d6f32729")]
-    [InlineData("0.11.1", "1.18", "kindest/node:v1.18.19@sha256:7af1492e19b3192a79f606e43c35fb741e520d195f96399284515f077b3b622c ")]
-    [InlineData("0.11.1", "1.17", "kindest/node:v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00 ")]
+    [InlineData("0.11.1", "1.18", "kindest/node:v1.18.19@sha256:7af1492e19b3192a79f606e43c35fb741e520d195f96399284515f077b3b622c")]
+    [InlineData("0.11.1", "1.17", "kindest/node:v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00")]
     [InlineData("0.11.1", "1.16", "kindest/node:v1.16.15@sha256:83067ed51bf2a3395b24687094e283a7c7c865ccc12a8b1d7aa673ba0c5e8861")]
     [InlineData("0.11.1", "1.15", "kindest/node:v1.15.12@sha256:b920920e1eda689d9936dfcf7332701e80be12566999152626b2c9d730397a95")]
     [InlineData("0.11.1", "1.14", "kindest/node:v1.14.10@sha256:f8a66ef82822ab4f7569e91a5bccaf27bceee135c1457c512e54de8c6f7219f8")]
@@ -107,11 +107,11 @@ public class KindVersionMapTests
     [InlineData("0.11.0", "1.21", "kindest/node:v1.21.1@sha256:fae9a58f17f18f06aeac9772ca8b5ac680ebbed985e266f711d936e91d113bad")]
     [InlineData("0.11.0", "1.20", "kindest/node:v1.20.7@sha256:e645428988191fc824529fd0bb5c94244c12401cf5f5ea3bd875eb0a787f0fe9")]
     [InlineData("0.11.0", "1.19", "kindest/node:v1.19.11@sha256:7664f21f9cb6ba2264437de0eb3fe99f201db7a3ac72329547ec4373ba5f5911")]
-    [InlineData("0.11.0", "1.18", "kindest/node:v1.18.19@sha256:530378628c7c518503ade70b1df698b5de5585dcdba4f349328d986b8849b1ee ")]
+    [InlineData("0.11.0", "1.18", "kindest/node:v1.18.19@sha256:530378628c7c518503ade70b1df698b5de5585dcdba4f349328d986b8849b1ee")]
     [InlineData("0.11.0", "1.17", "kindest/node:v1.17.17@sha256:c581fbf67f720f70aaabc74b44c2332cc753df262b6c0bca5d26338492470c17")]
     [InlineData("0.11.0", "1.16", "kindest/node:v1.16.15@sha256:430c03034cd856c1f1415d3e37faf35a3ea9c5aaa2812117b79e6903d1fc9651")]
-    [InlineData("0.11.0", "1.15", "kindest/node:v1.15.12@sha256:8d575f056493c7778935dd855ded0e95c48cb2fab90825792e8fc9af61536bf9 ")]
-    [InlineData("0.11.0", "1.14", "kindest/node:v1.14.10@sha256:6033e04bcfca7c5f2a9c4ce77551e1abf385bcd2709932ec2f6a9c8c0aff6d4f ")]
+    [InlineData("0.11.0", "1.15", "kindest/node:v1.15.12@sha256:8d575f056493c7778935dd855ded0e95c48cb2fab90825792e8fc9af61536bf9")]
+    [InlineData("0.11.0", "1.14", "kindest/node:v1.14.10@sha256:6033e04bcfca7c5f2a9c4ce77551e1abf385bcd2709932ec2f6a9c8c0aff6d4f")]
     [InlineData("0.10.0", "1.20", "kindest/node:v1.20.2@sha256:8f7ea6e7642c0da54f04a7ee10431549c0257315b3a634f6ef2fecaaedb19bab")]
     [InlineData("0.10.0", "1.19", "kindest/node:v1.19.7@sha256:a70639454e97a4b733f9d9b67e12c01f6b0297449d5b9cbbef87473458e26dca")]
     [InlineData("0.10.0", "1.18", "kindest/node:v1.18.15@sha256:5c1b980c4d0e0e8e7eb9f36f7df525d079a96169c8a8f20d8bd108c0d0889cc4")]
@@ -136,8 +136,8 @@ public class KindVersionMapTests
     [InlineData("0.8.0", "1.11", "kindest/node:v1.11.10@sha256:74c8740710649a3abb169e7f348312deff88fc97d74cfb874c5095ab3866bb42")]
     public void FindImage_WhenImageExistsForSpecifiedVersions_ShouldReturnExpectedImage(string kindVersion, string kubeVersion, string expected)
     {
-        var reader = new EmbeddedDataReader(new JsonObjectSerializer());
-        var map = reader.ReadJsonObjects<KindVersionMap>("Vdk.Data.KindVersionData.json");
+        var reader = new EmbeddedDataReader(new JsonObjectSerializer(), typeof(KindVersionMapTests));
+        var map = reader.ReadJsonObjects<KindVersionMap>("Vdk.Tests.Data.KindVersionData.json");
 
         var result = map.FindImage(kindVersion, kubeVersion);
 

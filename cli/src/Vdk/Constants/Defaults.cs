@@ -15,4 +15,8 @@ public static class Defaults
     public const string KubeApiVersion = "1.32";
     public const int ControlPlaneNodes = 1;
     public const int WorkerNodes = 2;
+
+    public const string ConfigDirectoryName = "config";
+    public const string KindVersionInfoFileName = "kind.version.info.json";
+    public const int KindVersionInfoCacheMinutes = 1440;
 }

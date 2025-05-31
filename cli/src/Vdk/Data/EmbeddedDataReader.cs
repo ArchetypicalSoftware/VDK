@@ -1,3 +1,4 @@
+using System.Reflection;
 using Vdk.Services;
 
 namespace Vdk.Data;
@@ -11,13 +12,21 @@ public class EmbeddedDataReader : IEmbeddedDataReader
         _serializer = serializer;
     }
 
+    public EmbeddedDataReader(IJsonObjectSerializer serializer, Type refType)
+    {
+        _serializer = serializer;
+        _refAssembly = refType.Assembly;
+    }
+
+    private readonly Assembly _refAssembly = typeof(EmbeddedDataReader).Assembly;
+
     public static IEmbeddedDataReader Default => new EmbeddedDataReader(new JsonObjectSerializer());
 
     public string Read(string path)
     {
-        var names = typeof(EmbeddedDataReader).Assembly.GetManifestResourceNames();
+        var names = _refAssembly.GetManifestResourceNames();
         var name = names.FirstOrDefault(x=>x.Equals(path, StringComparison.CurrentCultureIgnoreCase))??path;
-        using (var stream = (typeof(EmbeddedDataReader).Assembly.GetManifestResourceStream(name)))
+        using (var stream = (_refAssembly.GetManifestResourceStream(name)))
         {
             if(stream == null) throw new FileNotFoundException();
             using (var reader = new StreamReader(stream))
