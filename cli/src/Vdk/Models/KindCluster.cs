@@ -1,3 +1,7 @@
+using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using YamlDotNet.Serialization;
+
 namespace Vdk.Models;
 
 public class KindCluster
@@ -17,6 +21,14 @@ public class KindNode
     public Dictionary<string, string>? Labels { get; set; } = null;
     public List<PortMapping>? ExtraPortMappings { get; set; } = null;
     public List<Mount>? ExtraMounts { get; set; } = null;
+
+    [JsonIgnore]
+    [YamlIgnore]
+    public int? HttpsHostPort => ExtraPortMappings?.FirstOrDefault(x => x.ContainerPort == 30443)?.HostPort;
+
+    [YamlIgnore]
+    [JsonIgnore]
+    public int? HttpHostPort => ExtraPortMappings?.FirstOrDefault(x => x.ContainerPort == 30080)?.HostPort;
 }
 
 public class FileMapping

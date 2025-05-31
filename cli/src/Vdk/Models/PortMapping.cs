@@ -25,6 +25,5 @@ public class PortMapping
         return port;
     }
 
-    public static PortMapping DefaultRegistryPortMapping = new PortMapping { ContainerPort =Containers.RegistryContainerPort, HostPort = Containers.RegistryHostPort };
-
+    public static PortMapping DefaultRegistryPortMapping = new PortMapping { ContainerPort = Containers.RegistryContainerPort, HostPort = Containers.RegistryHostPort };
 }

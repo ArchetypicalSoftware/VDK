@@ -2,7 +2,7 @@ namespace Vdk.Services;
 
 public interface IReverseProxyClient
 {
-    void UpsertCluster(string clusterName, int targetPortHttps, int targetPortHttp);
+    void UpsertCluster(string clusterName, int targetPortHttps, int targetPortHttp, bool reload = true);
 
     void DeleteCluster(string clusterName);
 
@@ -11,4 +11,6 @@ public interface IReverseProxyClient
     void Delete();
 
     void List();
+
+    bool Exists();
 }
