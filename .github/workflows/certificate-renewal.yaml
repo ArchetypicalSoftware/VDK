@@ -36,7 +36,7 @@ jobs:
           RENEWAL_INTERVAL: 0
           REPLACE_SYMLINKS:  false
         run: |
-          docker run -e CERTBOT_DOMAINS="dev-k8s.cloud" \
+          docker run -e CERTBOT_DOMAINS="dev-k8s.cloud,*.dev-k8s.cloud" \
             -e CERTBOT_EMAIL="${CERTBOT_EMAIL}" \
             -e CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
             -e RENEWAL_INTERVAL=0 \
@@ -64,7 +64,7 @@ jobs:
         run: |
           BRANCH=certbot-update-$(date +'%Y%m%d-%H%M%S')
           git checkout -b $BRANCH
-          git add certs/
+          git add Certs/
           git commit -m "Update certificates [skip ci]" || echo "No changes to commit"
           git push https://x-access-token:${GH_PAT}@github.com/ArchetypicalSoftware/VDK.git $BRANCH
           gh pr create --title "Update certificates" --body "Automated certificate renewal PR." --head $BRANCH --base $(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') --fill

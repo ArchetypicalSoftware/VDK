@@ -13,10 +13,13 @@ internal class ReverseProxyClient : IReverseProxyClient
     private readonly IDockerEngine _docker;
     private readonly Func<string, IKubernetesClient> _client;
     private readonly IConsole _console;
+ 
+    
+    private static readonly string NginxConf = Path.Combine("vega.conf");
+ 
     private readonly IKindClient _kind;
 
-    private static readonly string NginxConf = Path.Combine(".bin", "vega.conf");
-
+ 
     // ReverseProxyHostPort is 443 by default, unless REVERSE_PROXY_HOST_PORT is set as an env var
     private int ReverseProxyHostPort = GetEnvironmentVariableAsInt("REVERSE_PROXY_HOST_PORT", 443);
 
@@ -63,8 +66,8 @@ internal class ReverseProxyClient : IReverseProxyClient
                     }
                 });
             }
-            var fullChain = new FileInfo("Certs/fullchain.pem");
-            var privKey = new FileInfo("Certs/privkey.pem");
+            var fullChain = new FileInfo(Path.Combine("Certs", "fullchain.pem"));
+            var privKey = new FileInfo(Path.Combine("Certs", "privkey.pem"));
             try
             {
                 _docker.Run(Containers.ProxyImage, Containers.ProxyName,
