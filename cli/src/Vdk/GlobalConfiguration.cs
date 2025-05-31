@@ -19,4 +19,6 @@ public class GlobalConfiguration
 
     public string ConfigDirectoryPath => Path.Combine(VegaDirectory, ConfigDirectoryName);
     public string KindVersionInfoFilePath => Path.Combine(ConfigDirectoryPath, Defaults.KindVersionInfoFileName);
+
+    public string MasterNodeAnnotation = "vdk.vega.io/cluster";
 }

@@ -4,7 +4,7 @@ using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
 
-public class ListClustersCommand: Command
+public class ListClustersCommand : Command
 {
     private readonly IConsole _console;
     private readonly IKindClient _client;
@@ -19,7 +19,8 @@ public class ListClustersCommand: Command
     public Task InvokeAsync()
     {
         var clusters = _client.ListClusters();
-        clusters.ForEach(_console.WriteLine);
+        foreach (var c in clusters.Where(x => x.isVdk))
+            _console.WriteLine(c.name);
         return Task.CompletedTask;
     }
 }

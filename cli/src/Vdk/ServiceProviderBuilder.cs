@@ -7,8 +7,10 @@ using Vdk.Commands;
 using Vdk.Data;
 using Vdk.Services;
 using System.Runtime.InteropServices;
+using System.Text;
 using Octokit;
 using Vdk.Constants;
+using k8s.Exceptions;
 
 namespace Vdk;
 
@@ -19,8 +21,8 @@ public static class ServiceProviderBuilder
         var services = new ServiceCollection();
         var yaml = new YamlObjectSerializer();
         var gitHubClient = new GitHubClient(new ProductHeaderValue("vega-client"));
-        _ = services
-            .AddSingleton<Models.OperatingSystem>(s =>  
+        services
+            .AddSingleton<Models.OperatingSystem>(s =>
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return new(Platform.Linux);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return new(Platform.OSX);
@@ -54,16 +56,29 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
             .AddSingleton<IDockerEngine, LocalDockerClient>()
-            .AddSingleton<IHubClient,DockerHubClient>()
+            .AddSingleton<IHubClient, DockerHubClient>()
             .AddSingleton<IGitHubClient>(gitHubClient)
             .AddSingleton<GlobalConfiguration>(new GlobalConfiguration())
-            .AddTransient<Func<string, IKubernetesClient>>(provider =>
+            .AddSingleton<Func<string, IKubernetesClient>>(provider =>
             {
+                // Static cache for kubeconfig YAMLs by context
+                Dictionary<string, KubernetesClient> kubeConfigCache = new();
+                object cacheLock = new();
                 return context =>
                 {
-                    var config = KubernetesClientConfiguration.LoadKubeConfig();
-                    config.CurrentContext = $"kind-{context}";
-                    return new KubernetesClient(KubernetesClientConfiguration.BuildConfigFromConfigObject(config));
+                    lock (cacheLock)
+                    {
+                        if (!kubeConfigCache.ContainsKey(context))
+                        {
+                            //Console.WriteLine($"Fetching kubeconfig for kind context: {context}");
+                            var shell = provider.GetRequiredService<IShell>();
+                            var kubeConfigYaml = shell.ExecuteAndCapture("kind", ["get", "kubeconfig", "-n", $"{context}"]);
+                            using var stream = new MemoryStream(Encoding.Default.GetBytes(kubeConfigYaml));
+                            var config = KubernetesClientConfiguration.BuildConfigFromConfigFile(stream);
+                            kubeConfigCache[context] = new KubernetesClient(config);
+                        }
+                        return kubeConfigCache[context];
+                    }
                 };
             })
             .AddSingleton<IDockerClient>(provider =>

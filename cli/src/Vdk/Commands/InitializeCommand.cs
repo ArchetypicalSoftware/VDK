@@ -14,7 +14,7 @@ public class InitializeCommand : Command
     private readonly IConsole _console;
     private readonly IKindVersionInfoService _kindVersionInfo;
 
-    public InitializeCommand(CreateClusterCommand createCluster, CreateProxyCommand createProxy, CreateRegistryCommand createRegistry, 
+    public InitializeCommand(CreateClusterCommand createCluster, CreateProxyCommand createProxy, CreateRegistryCommand createRegistry,
         IKindClient kind, IConsole console, IKindVersionInfoService kindVersionInfo)
         : base("init", "Initialize environment")
     {
@@ -40,7 +40,7 @@ public class InitializeCommand : Command
         }
         var kubeVersion = await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion);
 
-        var existing = _kind.ListClusters();
+        var existing = _kind.ListClusters().Select(x => x.name);
         if (existing.Any(x => x.Equals(name, StringComparison.CurrentCultureIgnoreCase)))
         {
             return;

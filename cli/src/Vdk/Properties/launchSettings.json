@@ -1,11 +1,20 @@
 {
   "profiles": {
-    "Vdk": {
+    "update-kind": {
       "commandName": "Project",
-      "commandLineArgs": "update kind-version-info",
-      "environmentVariables": {
-        "GITHUB_TOKEN": "xxxxx"
-      }
+      "commandLineArgs": "update kind-version-info"
+    },
+    "remove-proxy": {
+      "commandName": "Project",
+      "commandLineArgs": "remove proxy"
+    },
+    "create-proxy": {
+      "commandName": "Project",
+      "commandLineArgs": "create proxy"
+    },
+    "create-clutser": {
+      "commandName": "Project",
+      "commandLineArgs": "create cluster"
     },
     "WSL": {
       "commandName": "WSL2",
