@@ -1,6 +1,7 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using Vdk.Constants;
 using Vdk.Services;
+using System.Diagnostics;
 using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
@@ -21,11 +22,23 @@ public class InitializeCommand : Command
         _createRegistry = createRegistry;
         _kind = kind;
         _console = console;
-        this.SetHandler(InvokeAsync);
+        this.SetHandler((bool bypassPrompt) => InvokeAsync(bypassPrompt), new Option<bool>("--bypassPrompt", () => false, "Bypass the tenant prompt (for tests)"));
     }
 
-    public async Task InvokeAsync()
+    public async Task InvokeAsync(bool bypassPrompt = false)
     {
+        // Ensure config exists and prompt if not
+        var config = ConfigManager.EnsureConfig(
+            promptTenantId: () => {
+                _console.Write("Tenant GUID: ");
+                return Console.ReadLine();
+            },
+            openBrowser: () => {
+                var url = "https://archetypical.software/register";
+                try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
+            },
+            bypassPrompt: bypassPrompt);
+
         var name = Defaults.ClusterName;
         var controlPlaneNodes = 1;
         var workerNodes = 2;

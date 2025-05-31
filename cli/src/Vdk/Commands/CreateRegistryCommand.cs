@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using Vdk.Services;
 using IConsole = Vdk.Services.IConsole;
 
@@ -18,7 +18,14 @@ public class CreateRegistryCommand: Command
 
     public Task InvokeAsync()
     {
-        _client.Create();
+        try
+        {
+            _client.Create();
+        }
+        catch (Exception ex)
+        {
+            _console.WriteError("Error creating registry: {0}", ex.Message);
+        }
         return Task.CompletedTask;
     }
 }

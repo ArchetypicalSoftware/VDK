@@ -32,6 +32,9 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+
+# Allow code coverage output
+
 [Ll]og/
 [Ll]ogs/
 [Pp]ackages
@@ -487,3 +490,6 @@ $RECYCLE.BIN/
 
 # Intellij
 *.iml
+
+!coverage.json
+!coverage.xml
