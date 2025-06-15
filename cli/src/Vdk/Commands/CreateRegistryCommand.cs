@@ -18,7 +18,7 @@ public class CreateRegistryCommand: Command
 
     public Task InvokeAsync()
     {
-        _client.Create();
+        _client.CreateRegistry();
         return Task.CompletedTask;
     }
 }

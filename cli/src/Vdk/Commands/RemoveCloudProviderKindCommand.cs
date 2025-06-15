@@ -4,12 +4,12 @@ using IConsole = Vdk.Services.IConsole;
 
 namespace Vdk.Commands;
 
-public class RemoveRegistryCommand: Command
+public class RemoveCloudProviderKindCommand: Command
 {
     private readonly IConsole _console;
     private readonly IHubClient _client;
 
-    public RemoveRegistryCommand(IConsole console, IHubClient client) : base("registry", "Remove Vega VDK Container Registry")
+    public RemoveCloudProviderKindCommand(IConsole console, IHubClient client) : base("cloud-provider-kind", "Remove Vega VDK Cloud Provider Kind")
     {
         _console = console;
         _client = client;
@@ -18,7 +18,7 @@ public class RemoveRegistryCommand: Command
 
     public Task InvokeAsync()
     {
-        _client.DestroyRegistry();
+        _client.DestroyCloudProviderKind();
         return Task.CompletedTask;
     }
 }
