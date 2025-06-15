@@ -2,9 +2,15 @@ namespace Vdk.Services;
 
 public interface IHubClient
 {
-    void Create();
+    void CreateRegistry();
 
-    void Destroy();
+    void CreateCloudProviderKind();
 
-    bool Exists();
+    void DestroyRegistry();
+    
+    void DestroyCloudProviderKind();
+    
+    bool ExistRegistry();
+    
+    bool ExistCloudProviderKind();
 }

@@ -4,7 +4,7 @@ namespace Vdk.Services;
 
 public interface IDockerEngine
 {
-    bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands);
+    bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands, string? network = null);
 
     bool Exists(string name,bool checkRunning = true);
 

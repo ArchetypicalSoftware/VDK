@@ -12,7 +12,7 @@ public class LocalDockerClient : IDockerEngine
         _dockerClient = dockerClient;
     }
 
-    public bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands)
+    public bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands, string? network = null)
     {
         _dockerClient.Images.CreateImageAsync(
           new ImagesCreateParameters
@@ -27,7 +27,8 @@ public class LocalDockerClient : IDockerEngine
             {
                 Image = image,
                 Name = name,
-
+                
+                    
                 Labels = new Dictionary<string, string> { { "vega-component", name } },
                 ExposedPorts = ports?.ToDictionary(x => $"{x.ContainerPort}/tcp", y => default(EmptyStruct)),
                 Volumes = volumes?.ToDictionary(x => x.Destination, y => new EmptyStruct()),
@@ -43,6 +44,34 @@ public class LocalDockerClient : IDockerEngine
                     
                 }
             }).GetAwaiter().GetResult();
+        // Connect to custom Docker network if specified
+        if (!string.IsNullOrWhiteSpace(network))
+        {
+            var networkList = _dockerClient.Networks
+                .ListNetworksAsync(new NetworksListParameters
+                {
+                    Filters = new Dictionary<string, IDictionary<string, bool>>
+                    {
+                        { "name", new Dictionary<string, bool> { { network, true } } }
+                    }
+                })
+                .GetAwaiter()
+                .GetResult();
+
+            var dockerNetwork = networkList?.FirstOrDefault();
+            if (dockerNetwork == null)
+            {
+                throw new Exception($"Docker network '{network}' not found.");
+            }
+
+            _dockerClient.Networks
+                .ConnectNetworkAsync(dockerNetwork.ID, new NetworkConnectParameters
+                {
+                    Container = response.ID
+                })
+                .GetAwaiter()
+                .GetResult();
+        }
 
         return _dockerClient.Containers.StartContainerAsync(response.ID, new ContainerStartParameters() { }).GetAwaiter().GetResult();
     }
