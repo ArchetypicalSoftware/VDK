@@ -42,7 +42,7 @@ Gets the kubeconfig path for a cluster.
 
 # `vdk create cloud-provider-kind`
 
-Creates a cloud Provider KIND docker image wich runs as a standalone binary in the local machine 
+Creates a cloud Provider KIND docker image which runs as a standalone binary in the local machine 
 and will connect to the Kind cluster and provision new Load balancer containers for the services.
 
 
