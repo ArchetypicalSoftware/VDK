@@ -14,7 +14,7 @@
     },
     "create-clutser": {
       "commandName": "Project",
-      "commandLineArgs": "create cluster"
+      "commandLineArgs": "create cloud-provider-kind"
     },
     "WSL": {
       "commandName": "WSL2",

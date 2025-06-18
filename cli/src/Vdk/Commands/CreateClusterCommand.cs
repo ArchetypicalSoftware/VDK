@@ -61,8 +61,8 @@ public class CreateClusterCommand : Command
         // check if the hub and proxy are there
         if (!_reverseProxy.Exists())
             _reverseProxy.Create();
-        if (!_hub.Exists())
-            _hub.Create();
+        if (!_hub.ExistRegistry())
+            _hub.CreateRegistry();
 
         var map = await _kindVersionInfo.GetVersionInfoAsync();
         string? kindVersion = null;
