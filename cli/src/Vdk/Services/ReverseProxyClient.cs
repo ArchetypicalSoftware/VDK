@@ -235,7 +235,7 @@ internal class ReverseProxyClient : IReverseProxyClient
             _console.WriteError("CoreDNS Corefile not found in configmap. Please check the configuration and try again.");
             return false;
         }
-        // add the clusterName.dev-k8s.cloud rewrite entry to the Corefile after th kubernetes block
+        // add the clusterName.dev-k8s.cloud rewrite entry to the Corefile after the kubernetes block
         // if the line already exists, do not add it again
         if (corefile.Contains(rewriteString))
         {
