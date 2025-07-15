@@ -60,16 +60,17 @@ public static class ServiceProviderBuilder
             .AddSingleton<IDockerEngine>(provider =>
             {
                 // Intelligent fallback logic
+                var fileSystem = provider.GetRequiredService<IFileSystem>();
                 var config = provider.GetRequiredService<GlobalConfiguration>();
-                var fallbackFile = System.IO.Path.Combine(config.VegaDirectory, ".vdk_docker_fallback");
+                var fallbackFile = fileSystem.Path.Combine(config.VegaDirectory, ".vdk_docker_fallback");
                 DateTime now = DateTime.UtcNow;
                 DateTime fallbackUntil = DateTime.MinValue;
 
-                if (System.IO.File.Exists(fallbackFile))
+                if (fileSystem.File.Exists(fallbackFile))
                 {
                     try
                     {
-                        var content = System.IO.File.ReadAllText(fallbackFile).Trim();
+                        var content = fileSystem.File.ReadAllText(fallbackFile).Trim();
                         if (DateTime.TryParse(content, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed))
                         {
                             fallbackUntil = parsed;
@@ -93,7 +94,7 @@ public static class ServiceProviderBuilder
                     // Write fallback timestamp for 2 hours
                     try
                     {
-                        System.IO.File.WriteAllText(fallbackFile, now.AddHours(2).ToString("o"));
+                        fileSystem.File.WriteAllText(fallbackFile, now.AddHours(2).ToString("o"));
                     }
                     catch { /* ignore file errors */ }
                     return new FallbackDockerEngine();
