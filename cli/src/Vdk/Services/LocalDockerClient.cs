@@ -142,8 +142,9 @@ public class LocalDockerClient : IDockerEngine
             _dockerClient.Images.ListImagesAsync(new ImagesListParameters()).GetAwaiter().GetResult();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.Error.WriteLine($"Error in CanConnect: {ex.Message}");
             return false;
         }
     }
