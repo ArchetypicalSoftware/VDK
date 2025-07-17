@@ -13,4 +13,6 @@ public interface IDockerEngine
     bool Stop(string name);
 
     bool Exec(string name, string[] commands);
+
+    bool CanConnect();
 }

@@ -57,7 +57,51 @@ public static class ServiceProviderBuilder
             .AddSingleton<IFluxClient, FluxClient>()
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
-            .AddSingleton<IDockerEngine, LocalDockerClient>()
+            .AddSingleton<IDockerEngine>(provider =>
+            {
+                // Intelligent fallback logic
+                var fileSystem = provider.GetRequiredService<IFileSystem>();
+                var config = provider.GetRequiredService<GlobalConfiguration>();
+                var fallbackFile = fileSystem.Path.Combine(config.VegaDirectory, ".vdk_docker_fallback");
+                DateTime now = DateTime.UtcNow;
+                DateTime fallbackUntil = DateTime.MinValue;
+
+                if (fileSystem.File.Exists(fallbackFile))
+                {
+                    try
+                    {
+                        var content = fileSystem.File.ReadAllText(fallbackFile).Trim();
+                        if (DateTime.TryParse(content, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed))
+                        {
+                            fallbackUntil = parsed;
+                        }
+                    }
+                    catch { /* ignore file errors */ }
+                }
+
+                if (fallbackUntil > now)
+                {
+                    // Still in fallback window
+                    return new FallbackDockerEngine();
+                }
+
+                var docker = provider.GetService<IDockerClient>();
+                if (docker == null) return new FallbackDockerEngine();
+
+                var programatic = new LocalDockerClient(docker);
+                if (!programatic.CanConnect())
+                {
+                    // Write fallback timestamp for 2 hours
+                    try
+                    {
+                        fileSystem.File.WriteAllText(fallbackFile, now.AddHours(2).ToString("o"));
+                    }
+                    catch { /* ignore file errors */ }
+                    return new FallbackDockerEngine();
+                }
+
+                return programatic;
+            })
             .AddSingleton<IHubClient, DockerHubClient>()
             .AddSingleton<IGitHubClient>(gitHubClient)
             .AddSingleton<GlobalConfiguration>(new GlobalConfiguration())
