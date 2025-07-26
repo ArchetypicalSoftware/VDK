@@ -25,9 +25,9 @@ jobs:
           - rid: linux-musl-arm64
             runner: ubuntu-latest
           - rid: osx-x64
-            runner: macos-15-large
+            runner: self-hosted-mac
           - rid: osx-arm64
-            runner: macos-15
+            runner: self-hosted-mac
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
