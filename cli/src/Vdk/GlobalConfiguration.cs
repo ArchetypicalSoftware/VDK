@@ -4,7 +4,7 @@ namespace Vdk;
 
 public class GlobalConfiguration
 {
-    private string? _profileDirectory = null;
+    internal string? _profileDirectory = null;
 
     public string ConfigDirectoryName { get; set; } = Defaults.ConfigDirectoryName;
 
