@@ -5,12 +5,14 @@ namespace Vdk.Commands;
 
 public class AppCommand: RootCommand
 {
-    public AppCommand(CreateCommand create, RemoveCommand remove, ListCommand list, InitializeCommand init, UpdateCommand update, IHubClient client) : base("Vega CLI - Manage Vega development environment")
+    public AppCommand(CreateCommand create, RemoveCommand remove, ListCommand list, InitializeCommand init, UpdateCommand update, LoginCommand login, LogoutCommand logout, IHubClient client) : base("Vega CLI - Manage Vega development environment")
     {
         AddCommand(create);
         AddCommand(remove);
         AddCommand(list);
         AddCommand(init);
         AddCommand(update);
+        AddCommand(login);
+        AddCommand(logout);
     }
 }

@@ -65,7 +65,13 @@ For contributing to VDK development or running it from source, we use [Devbox](h
 Once VDK is installed (either via binary or built from source), verify it:
 
 ```bash
-vdk --version
+vega --version
+```
+
+Then authenticate once using the device code flow (required before most commands):
+
+```bash
+vega login
 ```
 
 ## Next Steps

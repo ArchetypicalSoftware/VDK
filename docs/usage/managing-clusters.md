@@ -5,7 +5,7 @@ Learn how to manage your VDK-created KinD clusters.
 ## Listing Clusters
 
 ```bash
-vdk get clusters
+vega list clusters
 ```
 
 Expected Output:
@@ -18,12 +18,12 @@ my-dev-cluster    Running   v1.25.3
 ## Deleting Clusters
 
 ```bash
-vdk delete cluster --name my-dev-cluster
+vega remove cluster --Name my-dev-cluster
 ```
 
 To delete the default 'kind' cluster:
 ```bash
-vdk delete cluster
+vega remove cluster --Name vega
 ```
 
 ## Getting Kubeconfig
@@ -31,10 +31,10 @@ vdk delete cluster
 VDK typically configures `kubectl` automatically. To get the path to the kubeconfig file for a specific cluster:
 
 ```bash
-vdk get kubeconfig --name my-dev-cluster
+vega get kubeconfig --Name my-dev-cluster
 ```
 
 Or for the default cluster:
 ```bash
-vdk get kubeconfig
+vega get kubeconfig --Name vega
 ```

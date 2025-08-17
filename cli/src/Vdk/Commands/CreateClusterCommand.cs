@@ -21,6 +21,7 @@ public class CreateClusterCommand : Command
     private readonly IReverseProxyClient _reverseProxy;
     private readonly Func<string, IKubernetesClient> _clientFunc;
     private readonly GlobalConfiguration _configs;
+    private readonly IAuthService _auth;
 
     public CreateClusterCommand(
         IConsole console,
@@ -32,7 +33,8 @@ public class CreateClusterCommand : Command
         IFluxClient flux,
         IReverseProxyClient reverseProxy,
         Func<string, IKubernetesClient> clientFunc,
-        GlobalConfiguration configs)
+        GlobalConfiguration configs,
+        IAuthService auth)
         : base("cluster", "Create a Vega development cluster")
     {
         _console = console;
@@ -45,6 +47,7 @@ public class CreateClusterCommand : Command
         _reverseProxy = reverseProxy;
         _clientFunc = clientFunc;
         _configs = configs;
+        _auth = auth;
         var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
         var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
         var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
@@ -189,15 +192,47 @@ public class CreateClusterCommand : Command
         {
             _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
                 masterNode.ExtraPortMappings.Last().HostPort);
-            var ns = _clientFunc(name.ToLower()).Get<V1Namespace>("vega-system");
+            var client = _clientFunc(name.ToLower());
+            var ns = client.Get<V1Namespace>("vega-system");
             ns.EnsureMetadata().EnsureAnnotations()[_configs.MasterNodeAnnotation] = _yaml.Serialize(masterNode);
-            _clientFunc(name.ToLower()).Update(ns);
+            client.Update(ns);
+
+            // Write TenantId ConfigMap in vega-system
+            var tenantId = await _auth.GetTenantIdAsync();
+            if (!string.IsNullOrWhiteSpace(tenantId))
+            {
+                V1ConfigMap? cfg = null;
+                try
+                {
+                    cfg = client.Get<V1ConfigMap>("vega-tenant", "vega-system");
+                }
+                catch { /* not found, will create */ }
+
+                if (cfg is null)
+                {
+                    cfg = new V1ConfigMap(
+                        metadata: new V1ObjectMeta(name: "vega-tenant", namespaceProperty: "vega-system"),
+                        data: new Dictionary<string, string> { ["TenantId"] = tenantId }
+                    );
+                    client.Create(cfg);
+                }
+                else
+                {
+                    cfg.Data ??= new Dictionary<string, string>();
+                    cfg.Data["TenantId"] = tenantId;
+                    client.Update(cfg);
+                }
+            }
+            else
+            {
+                _console.WriteWarning("No TenantId found in token; skipping tenant config map.");
+            }
         }
         catch (Exception e)
         {
             // print the stack trace
             _console.WriteLine(e.StackTrace);
-            _console.WriteError("Failed to update reverse proxy: " + e.Message);
+            _console.WriteError("Failed to update reverse proxy or tenant config: " + e.Message);
             throw e;
         }
     }

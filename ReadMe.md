@@ -31,20 +31,26 @@ For detailed installation instructions for your operating system, please refer t
 
 ## Quick Start
 
-1.  **Create a default cluster:**
+1.  **Login (device code flow):**
     ```bash
-    vdk create cluster
+    vega login
+    ```
+    Follow the printed link/code to authenticate. Tokens are stored under `~/.vega/tokens`.
+
+2.  **Create a default cluster:**
+    ```bash
+    vega create cluster
     ```
     *(This may take a few minutes)*
 
-2.  **Verify cluster access:**
+3.  **Verify cluster access:**
     ```bash
     kubectl cluster-info --context kind-kind
     ```
 
-3.  **Delete the cluster:**
+4.  **Delete the cluster:**
     ```bash
-    vdk delete cluster
+    vega delete cluster
     ```
 
 ## Usage
@@ -54,6 +60,17 @@ For comprehensive usage details, examples, and command references, please see th
 *   **[Creating Clusters](./docs/usage/creating-clusters.md)**
 *   **[Managing Clusters](./docs/usage/managing-clusters.md)**
 *   **[Command Reference](./docs/usage/command-reference.md)**
+
+## Authentication
+
+VDK enforces that you are logged in before executing most `vega` commands. Authentication uses an OAuth2 Device Code flow (Ory Hydra):
+
+* __Login__: `vega login [--profile <name>]`
+* __Logout__: `vega logout [--profile <name>]`
+* __Multi-profile__: Use `--profile` to login or logout different affiliations. The current profile pointer is stored in `~/.vega/tokens/.current_profile`.
+* __Token storage__: Access/refresh tokens are stored per-profile in `~/.vega/tokens/<profile>.json`. Refresh is automatic when the access token expires.
+
+During cluster creation, VDK extracts `TenantId` from your access token and writes a ConfigMap named `vega-tenant` in the `vega-system` namespace so downstream tooling can correlate ownership.
 
 ## Contributing
 
