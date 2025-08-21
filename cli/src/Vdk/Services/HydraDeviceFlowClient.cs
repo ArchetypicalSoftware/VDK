@@ -25,7 +25,8 @@ public class HydraDeviceFlowClient
         var form = new Dictionary<string, string>
         {
             ["client_id"] = _config.OAuthClientId,
-            ["scope"] = string.Join(' ', _config.OAuthScopes)
+             
+            ["grant_type"] = "urn:ietf:params:oauth:grant-type:device_code"
         };
         using var req = new HttpRequestMessage(HttpMethod.Post, _config.HydraDeviceAuthorizationEndpoint)
         {
