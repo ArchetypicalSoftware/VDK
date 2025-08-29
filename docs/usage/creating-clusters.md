@@ -2,24 +2,26 @@
 
 This document explains how to create local Kubernetes clusters using VDK.
 
+> Prerequisite: Run `vega login` once to authenticate before creating clusters.
+
 ## Basic Cluster Creation
 
 To create a default cluster:
 
 ```bash
-vdk create cluster
+vega create cluster
 ```
 
 ## Specifying Cluster Name
 
 ```bash
-vdk create cluster --name my-dev-cluster
+vega create cluster --Name my-dev-cluster
 ```
 
 ## Specifying Kubernetes Version
 
 ```bash
-vdk create cluster --version v1.25.3
+vega create cluster --KubeVersion 1.29
 ```
 
 ## Multi-Node Clusters
@@ -27,8 +29,8 @@ vdk create cluster --version v1.25.3
 *(Details on creating clusters with multiple control-plane and worker nodes)*
 
 ```bash
-# Example (syntax TBD)
-vdk create cluster --nodes 3 --control-planes 1
+# Example
+vega create cluster --ControlPlaneNodes 1 --Workers 2
 ```
 
 ## Using Configuration Files
@@ -36,5 +38,6 @@ vdk create cluster --nodes 3 --control-planes 1
 *(Details on using a KinD configuration file)*
 
 ```bash
-vdk create cluster --config path/to/kind-config.yaml
+# If/when a config file flag is added, document here
+``` 
 ```

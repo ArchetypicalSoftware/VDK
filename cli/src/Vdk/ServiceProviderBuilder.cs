@@ -11,6 +11,7 @@ using System.Text;
 using Octokit;
 using Vdk.Constants;
 using k8s.Exceptions;
+using System.Net.Http;
 
 namespace Vdk;
 
@@ -37,6 +38,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<CreateCommand>()
             .AddSingleton<RemoveCommand>()
             .AddSingleton<ListCommand>()
+            .AddSingleton<LoginCommand>()
+            .AddSingleton<LogoutCommand>()
             .AddSingleton<CreateClusterCommand>()
             .AddSingleton<RemoveClusterCommand>()
             .AddSingleton<ListClustersCommand>()
@@ -57,6 +60,10 @@ public static class ServiceProviderBuilder
             .AddSingleton<IFluxClient, FluxClient>()
             .AddSingleton<IReverseProxyClient, ReverseProxyClient>()
             .AddSingleton<IEmbeddedDataReader, EmbeddedDataReader>()
+            .AddSingleton<ITokenStore, TokenStoreFile>()
+            .AddSingleton<IAuthService, AuthService>()
+            .AddSingleton<HttpClient>(_ => new HttpClient())
+            .AddSingleton<HydraDeviceFlowClient>()
             .AddSingleton<IDockerEngine>(provider =>
             {
                 // Intelligent fallback logic
