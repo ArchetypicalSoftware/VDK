@@ -51,21 +51,41 @@ public class CreateClusterCommand : Command
         var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
         var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
         var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
-        var kubeVersion = new Option<string>(new[] { "-k", "--KubeVersion" }, () => "1.29", "The kubernetes api version.");
+        var kubeVersion = new Option<string>(new[] { "-k", "--KubeVersion" }, () => "", "The kubernetes api version.");
+        var labels = new Option<string>(new[] { "-l", "--Labels" }, () => "", "The labels to apply to the cluster to use in the configuration of Sectors. Each label pair should be separated by commas and the format should be KEY=VALUE. eg. KEY1=VAL1,KEY2=VAL2");
         AddOption(nameOption);
         AddOption(controlNodes);
         AddOption(workers);
         AddOption(kubeVersion);
-        this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion);
+        AddOption(labels);
+        this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion, labels);
     }
 
-    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null)
+    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null, string? labels = null)
     {
         // check if the hub and proxy are there
         if (!_reverseProxy.Exists())
             _reverseProxy.Create();
         if (!_hub.ExistRegistry())
             _hub.CreateRegistry();
+
+        // validate the labels if they were passed in
+        var pairs = (labels??"").Split(',').Select(x=>x.Split('='));
+        if (pairs.Any())
+        {
+            //validate the labels and clean them up if needed
+            foreach (var pair in pairs)
+            {
+                pair[0] = pair[0].Trim();
+                if (pair.Length > 1)
+                    pair[1] = pair[1].Trim();
+                if (pair.Length != 2 || string.IsNullOrWhiteSpace(pair[0]) || string.IsNullOrWhiteSpace(pair[1]))
+                {
+                    _console.WriteError($"The provided label '{string.Join('=', pair)}' is not valid.  Labels must be in the format KEY=VALUE and multiple labels must be separated by commas.");
+                    return;
+                }
+            }
+        }
 
         var map = await _kindVersionInfo.GetVersionInfoAsync();
         string? kindVersion = null;
@@ -83,7 +103,7 @@ public class CreateClusterCommand : Command
             _console.WriteWarning($"Kind version {kindVersion} is not supported by the current VDK.");
             return;
         }
-        var kubeVersion = kubeVersionRequested ?? await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion);
+        var kubeVersion = string.IsNullOrWhiteSpace(kubeVersionRequested) ? await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion) : kubeVersionRequested.Trim();
         var image = map.FindImage(kindVersion, kubeVersion);
         if (image is null)
         {
@@ -220,6 +240,14 @@ public class CreateClusterCommand : Command
                 {
                     cfg.Data ??= new Dictionary<string, string>();
                     cfg.Data["TenantId"] = tenantId;
+                    // add the label pairs here
+                    foreach (var pair in pairs)
+                    {
+                        if (pair.Length == 2 && !string.IsNullOrWhiteSpace(pair[0]) && !string.IsNullOrWhiteSpace(pair[1]))
+                        {
+                            cfg.Data[$"{pair[0]}"] = pair[1];
+                        }
+                    }
                     client.Update(cfg);
                 }
             }
