@@ -196,23 +196,23 @@ internal class ReverseProxyClient : IReverseProxyClient
         do
         {
             // check up to 10 times , waiting 5 seconds each time
-            ingressService = _client(clusterName).Get<V1Service>("ingress-nginx-controller", "ingress-nginx");
+            ingressService = _client(clusterName).Get<V1Service>("kgateway-system-kgateway", "kgateway-system");
             if (ingressService == null)
             {
-                _console.WriteLine("Waiting for ingress-nginx-controller service to be available...");
+                _console.WriteLine("Waiting for kgateway-system-kgateway service to be available...");
                 Thread.Sleep(5000);
                 attempts++;
             }
             else
             {
-                _console.WriteLine("Ingress-nginx-controller service found.");
+                _console.WriteLine("kgateway-system-kgateway service found.");
                 break;
             }
         }
         while (ingressService == null && attempts < 6);
         if (ingressService == null)
         {
-            _console.WriteError("Ingress-nginx-controller service not found. Please check the configuration and try again.");
+            _console.WriteError("kgateway-system-kgateway service not found. Please check the configuration and try again.");
             return false;
         }
         var rewriteString = $"    rewrite name {clusterName}.dev-k8s.cloud {ingressService.Name()}.{ingressService.Namespace()}.svc.cluster.local";
