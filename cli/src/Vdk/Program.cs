@@ -8,8 +8,8 @@ class Program
 {
     private static readonly IServiceProvider Services = ServiceProviderBuilder.Build();
 
-    static async Task Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
-        await Services.GetRequiredService<AppCommand>().InvokeAsync(args);
+        return await Services.GetRequiredService<AppCommand>().Parse(args).InvokeAsync();
     }
 }

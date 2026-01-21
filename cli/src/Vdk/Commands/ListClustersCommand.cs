@@ -13,7 +13,7 @@ public class ListClustersCommand : Command
     {
         _console = console;
         _client = client;
-        this.SetHandler(InvokeAsync);
+        SetAction(_ => InvokeAsync());
     }
 
     public Task InvokeAsync()

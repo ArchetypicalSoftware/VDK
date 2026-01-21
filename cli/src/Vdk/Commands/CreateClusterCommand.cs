@@ -11,16 +11,16 @@ namespace Vdk.Commands;
 
 public class CreateClusterCommand : Command
 {
-    private readonly IConsole _console;
-    private readonly IKindVersionInfoService _kindVersionInfo;
-    private readonly IYamlObjectSerializer _yaml;
-    private readonly IFileSystem _fileSystem;
-    private readonly IKindClient _kind;
-    private readonly IHubClient _hub;
-    private readonly IFluxClient _flux;
-    private readonly IReverseProxyClient _reverseProxy;
     private readonly Func<string, IKubernetesClient> _clientFunc;
     private readonly GlobalConfiguration _configs;
+    private readonly IConsole _console;
+    private readonly IFileSystem _fileSystem;
+    private readonly IFluxClient _flux;
+    private readonly IHubClient _hub;
+    private readonly IKindClient _kind;
+    private readonly IKindVersionInfoService _kindVersionInfo;
+    private readonly IReverseProxyClient _reverseProxy;
+    private readonly IYamlObjectSerializer _yaml;
 
     public CreateClusterCommand(
         IConsole console,
@@ -45,15 +45,24 @@ public class CreateClusterCommand : Command
         _reverseProxy = reverseProxy;
         _clientFunc = clientFunc;
         _configs = configs;
-        var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
-        var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
-        var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
-        var kubeVersion = new Option<string>(new[] { "-k", "--KubeVersion" }, () => "1.29", "The kubernetes api version.");
-        AddOption(nameOption);
-        AddOption(controlNodes);
-        AddOption(workers);
-        AddOption(kubeVersion);
-        this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion);
+        var nameOption = new Option<string>("--Name") { DefaultValueFactory = _ => Defaults.ClusterName, Description = "The name of the kind cluster to create." };
+        nameOption.Aliases.Add("-n");
+        var controlNodes = new Option<int>("--ControlPlaneNodes") { DefaultValueFactory = _ => Defaults.ControlPlaneNodes, Description = "The number of control plane nodes in the cluster." };
+        controlNodes.Aliases.Add("-c");
+        var workers = new Option<int>("--Workers") { DefaultValueFactory = _ => Defaults.WorkerNodes, Description = "The number of worker nodes in the cluster." };
+        workers.Aliases.Add("-w");
+        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "1.29", Description = "The kubernetes api version." };
+        kubeVersion.Aliases.Add("-k");
+
+        Options.Add(nameOption);
+        Options.Add(controlNodes);
+        Options.Add(workers);
+        Options.Add(kubeVersion);
+        SetAction(parseResult => InvokeAsync(
+            parseResult.GetValue(nameOption) ?? Defaults.ClusterName,
+            parseResult.GetValue(controlNodes),
+            parseResult.GetValue(workers),
+            parseResult.GetValue(kubeVersion)));
     }
 
     public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null)
