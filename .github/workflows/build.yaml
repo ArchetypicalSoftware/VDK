@@ -43,7 +43,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # Specify the .NET version you are using
+          dotnet-version: '10.0.x' # Specify the .NET version you are using
           
       - name: Restore
         run: dotnet restore ./cli

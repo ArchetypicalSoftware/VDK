@@ -16,7 +16,7 @@ public class ListKubernetesVersions: Command
         _console = console;
         _client = client;
         _versionInfo = versionInfo;
-        this.SetHandler(InvokeAsync);
+        SetAction(_ => InvokeAsync());
     }
 
     public async Task InvokeAsync()

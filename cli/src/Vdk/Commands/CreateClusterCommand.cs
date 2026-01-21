@@ -11,17 +11,17 @@ namespace Vdk.Commands;
 
 public class CreateClusterCommand : Command
 {
-    private readonly IConsole _console;
-    private readonly IKindVersionInfoService _kindVersionInfo;
-    private readonly IYamlObjectSerializer _yaml;
-    private readonly IFileSystem _fileSystem;
-    private readonly IKindClient _kind;
-    private readonly IHubClient _hub;
-    private readonly IFluxClient _flux;
-    private readonly IReverseProxyClient _reverseProxy;
     private readonly Func<string, IKubernetesClient> _clientFunc;
     private readonly GlobalConfiguration _configs;
     private readonly IAuthService _auth;
+    private readonly IConsole _console;
+    private readonly IFileSystem _fileSystem;
+    private readonly IFluxClient _flux;
+    private readonly IHubClient _hub;
+    private readonly IKindClient _kind;
+    private readonly IKindVersionInfoService _kindVersionInfo;
+    private readonly IReverseProxyClient _reverseProxy;
+    private readonly IYamlObjectSerializer _yaml;
 
     public CreateClusterCommand(
         IConsole console,
@@ -48,17 +48,29 @@ public class CreateClusterCommand : Command
         _clientFunc = clientFunc;
         _configs = configs;
         _auth = auth;
-        var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the kind cluster to create.");
-        var controlNodes = new Option<int>(new[] { "-c", "--ControlPlaneNodes" }, () => Defaults.ControlPlaneNodes, "The number of control plane nodes in the cluster.");
-        var workers = new Option<int>(new[] { "-w", "--Workers" }, () => Defaults.WorkerNodes, "The number of worker nodes in the cluster.");
-        var kubeVersion = new Option<string>(new[] { "-k", "--KubeVersion" }, () => "", "The kubernetes api version.");
-        var labels = new Option<string>(new[] { "-l", "--Labels" }, () => "", "The labels to apply to the cluster to use in the configuration of Sectors. Each label pair should be separated by commas and the format should be KEY=VALUE. eg. KEY1=VAL1,KEY2=VAL2");
-        AddOption(nameOption);
-        AddOption(controlNodes);
-        AddOption(workers);
-        AddOption(kubeVersion);
-        AddOption(labels);
-        this.SetHandler(InvokeAsync, nameOption, controlNodes, workers, kubeVersion, labels);
+
+        var nameOption = new Option<string>("--Name") { DefaultValueFactory = _ => Defaults.ClusterName, Description = "The name of the kind cluster to create." };
+        nameOption.Aliases.Add("-n");
+        var controlNodes = new Option<int>("--ControlPlaneNodes") { DefaultValueFactory = _ => Defaults.ControlPlaneNodes, Description = "The number of control plane nodes in the cluster." };
+        controlNodes.Aliases.Add("-c");
+        var workers = new Option<int>("--Workers") { DefaultValueFactory = _ => Defaults.WorkerNodes, Description = "The number of worker nodes in the cluster." };
+        workers.Aliases.Add("-w");
+        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "", Description = "The kubernetes api version." };
+        kubeVersion.Aliases.Add("-k");
+        var labels = new Option<string>("--Labels") { DefaultValueFactory = _ => "", Description = "The labels to apply to the cluster to use in the configuration of Sectors. Each label pair should be separated by commas and the format should be KEY=VALUE. eg. KEY1=VAL1,KEY2=VAL2" };
+        labels.Aliases.Add("-l");
+
+        Options.Add(nameOption);
+        Options.Add(controlNodes);
+        Options.Add(workers);
+        Options.Add(kubeVersion);
+        Options.Add(labels);
+        SetAction(parseResult => InvokeAsync(
+            parseResult.GetValue(nameOption) ?? Defaults.ClusterName,
+            parseResult.GetValue(controlNodes),
+            parseResult.GetValue(workers),
+            parseResult.GetValue(kubeVersion),
+            parseResult.GetValue(labels)));
     }
 
     public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null, string? labels = null)
@@ -230,10 +242,11 @@ public class CreateClusterCommand : Command
 
                 if (cfg is null)
                 {
-                    cfg = new V1ConfigMap(
-                        metadata: new V1ObjectMeta(name: "vega-tenant", namespaceProperty: "vega-system"),
-                        data: new Dictionary<string, string> { ["TenantId"] = tenantId }
-                    );
+                    cfg = new V1ConfigMap
+                    {
+                        Metadata = new V1ObjectMeta { Name = "vega-tenant", NamespaceProperty = "vega-system" },
+                        Data = new Dictionary<string, string> { ["TenantId"] = tenantId }
+                    };
                     client.Create(cfg);
                 }
                 else

@@ -24,7 +24,7 @@ public class InitializeCommand : Command
         _kind = kind;
         _console = console;
         _kindVersionInfo = kindVersionInfo;
-        this.SetHandler(InvokeAsync);
+        SetAction(_ => InvokeAsync());
     }
 
     public async Task InvokeAsync()
