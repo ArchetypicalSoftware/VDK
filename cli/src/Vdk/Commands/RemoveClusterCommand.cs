@@ -15,9 +15,10 @@ public class RemoveClusterCommand : Command
         _console = console;
         _kind = kind;
 
-        var nameOption = new Option<string>(new[] { "-n", "--Name" }, () => Defaults.ClusterName, "The name of the cluster to remove");
-        AddOption(nameOption);
-        this.SetHandler(InvokeAsync, nameOption);
+        var nameOption = new Option<string>("--Name") { DefaultValueFactory = _ => Defaults.ClusterName, Description = "The name of the cluster to remove" };
+        nameOption.Aliases.Add("-n");
+        Options.Add(nameOption);
+        SetAction(parseResult => InvokeAsync(parseResult.GetValue(nameOption) ?? Defaults.ClusterName));
     }
 
     public Task InvokeAsync(string name = Defaults.ClusterName)

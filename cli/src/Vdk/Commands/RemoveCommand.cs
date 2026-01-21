@@ -7,9 +7,9 @@ public class RemoveCommand: Command
     public RemoveCommand(RemoveClusterCommand removeCluster, RemoveRegistryCommand removeRegistry, RemoveProxyCommand removeProxy, RemoveCloudProviderKindCommand removeCloudProviderKindCommand) 
         : base("remove", "Remove Vega development resources")
     {
-        AddCommand(removeCluster);
-        AddCommand(removeRegistry);
-        AddCommand(removeProxy);
-        AddCommand(removeCloudProviderKindCommand);
+        Subcommands.Add(removeCluster);
+        Subcommands.Add(removeRegistry);
+        Subcommands.Add(removeProxy);
+        Subcommands.Add(removeCloudProviderKindCommand);
     }
 }

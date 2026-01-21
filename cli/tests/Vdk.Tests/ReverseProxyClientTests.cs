@@ -12,11 +12,11 @@ namespace Vdk.Tests
 {
     public class ReverseProxyClientTests
     {
-        private readonly Mock<IDockerEngine> _dockerMock = new();
+        private readonly Func<string, IKubernetesClient> _clientFunc;
         private readonly Mock<IConsole> _consoleMock = new();
+        private readonly Mock<IDockerEngine> _dockerMock = new();
         private readonly Mock<IKindClient> _kindMock = new();
         private readonly Mock<IKubernetesClient> _kubeClientMock = new();
-        private readonly Func<string, IKubernetesClient> _clientFunc;
 
         public ReverseProxyClientTests()
         {
@@ -28,14 +28,6 @@ namespace Vdk.Tests
         {
             var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
             client.Should().NotBeNull();
-        }
-
-        [Fact]
-        public void Exists_ReturnsTrue_WhenDockerThrows()
-        {
-            _dockerMock.Setup(d => d.Exists(It.IsAny<string>(), It.IsAny<bool>())).Throws(new Exception("fail"));
-            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
-            client.Exists().Should().BeTrue();
         }
 
         [Fact]
@@ -55,6 +47,14 @@ namespace Vdk.Tests
         }
 
         [Fact]
+        public void Exists_ReturnsTrue_WhenDockerThrows()
+        {
+            _dockerMock.Setup(d => d.Exists(It.IsAny<string>(), It.IsAny<bool>())).Throws(new Exception("fail"));
+            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
+            client.Exists().Should().BeTrue();
+        }
+
+        [Fact]
         public void InitConfFile_CreatesFileAndWritesConfig()
         {
             var tempFile = Path.GetTempFileName();
@@ -68,26 +68,10 @@ namespace Vdk.Tests
         }
 
         [Fact]
-        public void PatchCoreDns_ReturnsFalse_WhenIngressServiceNotFound()
-        {
-            // Arrange
-            _kubeClientMock.SetupSequence(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
-                .Returns((V1Service?)null);
-            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
-
-            // Act
-            var result = InvokePatchCoreDns(client, "test-cluster");
-
-            // Assert
-            Assert.False(result);
-            _consoleMock.Verify(x => x.WriteError(It.Is<string>(s => s.Contains("Ingress-nginx-controller service not found"))), Times.Once);
-        }
-
-        [Fact]
         public void PatchCoreDns_ReturnsFalse_WhenCoreDnsConfigMapNotFound()
         {
             // Arrange
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
                 .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
             _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
                 .Returns((V1ConfigMap?)null);
@@ -105,7 +89,7 @@ namespace Vdk.Tests
         public void PatchCoreDns_ReturnsFalse_WhenCorefileMissing()
         {
             // Arrange
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
                 .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
             _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
                 .Returns(new V1ConfigMap { Data = new Dictionary<string, string>() });
@@ -120,35 +104,11 @@ namespace Vdk.Tests
         }
 
         [Fact]
-        public void PatchCoreDns_ReturnsTrue_WhenRewriteAlreadyExists()
+        public void PatchCoreDns_ReturnsFalse_WhenIngressServiceNotFound()
         {
             // Arrange
-            var clusterName = "test-cluster";
-            var rewriteString = $"    rewrite name {clusterName}.dev-k8s.cloud svc.ns.svc.cluster.local";
-            var corefile = $"kubernetes cluster.local in-addr.arpa ip6.arpa {{\n}}\n{rewriteString}\n";
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
-                .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
-            _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
-                .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
-            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
-
-            // Act
-            var result = InvokePatchCoreDns(client, clusterName);
-
-            // Assert
-            Assert.True(result);
-            _consoleMock.Verify(x => x.WriteLine(It.Is<string>(s => s.Contains("already contains the rewrite entry"))), Times.Once);
-        }
-
-        [Fact]
-        public void PatchCoreDns_ReturnsFalse_WhenNoKubernetesBlock()
-        {
-            // Arrange
-            var corefile = "some unrelated config";
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
-                .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
-            _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
-                .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
+            _kubeClientMock.SetupSequence(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
+                .Returns((V1Service?)null);
             var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
 
             // Act
@@ -156,7 +116,7 @@ namespace Vdk.Tests
 
             // Assert
             Assert.False(result);
-            _consoleMock.Verify(x => x.WriteError(It.Is<string>(s => s.Contains("does not contain a kubernetes block"))), Times.Once);
+            _consoleMock.Verify(x => x.WriteError(It.Is<string>(s => s.Contains("kgateway-system-kgateway service not found"))), Times.Once);
         }
 
         [Fact]
@@ -164,7 +124,7 @@ namespace Vdk.Tests
         {
             // Arrange
             var corefile = "kubernetes cluster.local in-addr.arpa ip6.arpa {";
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
                 .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
             _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
                 .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
@@ -179,6 +139,46 @@ namespace Vdk.Tests
         }
 
         [Fact]
+        public void PatchCoreDns_ReturnsFalse_WhenNoKubernetesBlock()
+        {
+            // Arrange
+            var corefile = "some unrelated config";
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
+                .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
+            _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
+                .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
+            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
+
+            // Act
+            var result = InvokePatchCoreDns(client, "test-cluster");
+
+            // Assert
+            Assert.False(result);
+            _consoleMock.Verify(x => x.WriteError(It.Is<string>(s => s.Contains("does not contain a kubernetes block"))), Times.Once);
+        }
+
+        [Fact]
+        public void PatchCoreDns_ReturnsTrue_WhenRewriteAlreadyExists()
+        {
+            // Arrange
+            var clusterName = "test-cluster";
+            var rewriteString = $"    rewrite name {clusterName}.dev-k8s.cloud svc.ns.svc.cluster.local";
+            var corefile = $"kubernetes cluster.local in-addr.arpa ip6.arpa {{\n}}\n{rewriteString}\n";
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
+                .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
+            _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
+                .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
+            var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
+
+            // Act
+            var result = InvokePatchCoreDns(client, clusterName);
+
+            // Assert
+            Assert.True(result);
+            _consoleMock.Verify(x => x.WriteLine(It.Is<string>(s => s.Contains("already contains the rewrite entry"))), Times.Once);
+        }
+
+        [Fact]
         public void PatchCoreDns_UpdatesConfigMapAndRestartsPods()
         {
             // Arrange
@@ -186,7 +186,7 @@ namespace Vdk.Tests
             var corefile = $"kubernetes cluster.local in-addr.arpa ip6.arpa {{{Environment.NewLine}}}{Environment.NewLine}";
             var configMap = new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } };
             var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "coredns-1" } };
-            _kubeClientMock.Setup(x => x.Get<V1Service>("ingress-nginx-controller", "ingress-nginx"))
+            _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
                 .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
             _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
                 .Returns(configMap);

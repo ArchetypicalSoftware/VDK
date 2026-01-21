@@ -11,7 +11,7 @@ public class UpdateKindVersionInfoCommand: Command
         "Update kind version info (Maps kind and Kubernetes versions/enables new releases of kubernetes in vega)")
     {
         _client = client;
-        this.SetHandler(InvokeAsync);
+        SetAction(_ => InvokeAsync());
     }
 
     public Task InvokeAsync()
