@@ -13,6 +13,7 @@ public class CreateClusterCommand : Command
 {
     private readonly Func<string, IKubernetesClient> _clientFunc;
     private readonly GlobalConfiguration _configs;
+    private readonly IAuthService _auth;
     private readonly IConsole _console;
     private readonly IFileSystem _fileSystem;
     private readonly IFluxClient _flux;
@@ -32,7 +33,8 @@ public class CreateClusterCommand : Command
         IFluxClient flux,
         IReverseProxyClient reverseProxy,
         Func<string, IKubernetesClient> clientFunc,
-        GlobalConfiguration configs)
+        GlobalConfiguration configs,
+        IAuthService auth)
         : base("cluster", "Create a Vega development cluster")
     {
         _console = console;
@@ -45,33 +47,57 @@ public class CreateClusterCommand : Command
         _reverseProxy = reverseProxy;
         _clientFunc = clientFunc;
         _configs = configs;
+        _auth = auth;
+
         var nameOption = new Option<string>("--Name") { DefaultValueFactory = _ => Defaults.ClusterName, Description = "The name of the kind cluster to create." };
         nameOption.Aliases.Add("-n");
         var controlNodes = new Option<int>("--ControlPlaneNodes") { DefaultValueFactory = _ => Defaults.ControlPlaneNodes, Description = "The number of control plane nodes in the cluster." };
         controlNodes.Aliases.Add("-c");
         var workers = new Option<int>("--Workers") { DefaultValueFactory = _ => Defaults.WorkerNodes, Description = "The number of worker nodes in the cluster." };
         workers.Aliases.Add("-w");
-        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "1.29", Description = "The kubernetes api version." };
+        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "", Description = "The kubernetes api version." };
         kubeVersion.Aliases.Add("-k");
+        var labels = new Option<string>("--Labels") { DefaultValueFactory = _ => "", Description = "The labels to apply to the cluster to use in the configuration of Sectors. Each label pair should be separated by commas and the format should be KEY=VALUE. eg. KEY1=VAL1,KEY2=VAL2" };
+        labels.Aliases.Add("-l");
 
         Options.Add(nameOption);
         Options.Add(controlNodes);
         Options.Add(workers);
         Options.Add(kubeVersion);
+        Options.Add(labels);
         SetAction(parseResult => InvokeAsync(
             parseResult.GetValue(nameOption) ?? Defaults.ClusterName,
             parseResult.GetValue(controlNodes),
             parseResult.GetValue(workers),
-            parseResult.GetValue(kubeVersion)));
+            parseResult.GetValue(kubeVersion),
+            parseResult.GetValue(labels)));
     }
 
-    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null)
+    public async Task InvokeAsync(string name = Defaults.ClusterName, int controlPlaneNodes = 1, int workerNodes = 2, string? kubeVersionRequested = null, string? labels = null)
     {
         // check if the hub and proxy are there
         if (!_reverseProxy.Exists())
             _reverseProxy.Create();
         if (!_hub.ExistRegistry())
             _hub.CreateRegistry();
+
+        // validate the labels if they were passed in
+        var pairs = (labels??"").Split(',').Select(x=>x.Split('='));
+        if (pairs.Any())
+        {
+            //validate the labels and clean them up if needed
+            foreach (var pair in pairs)
+            {
+                pair[0] = pair[0].Trim();
+                if (pair.Length > 1)
+                    pair[1] = pair[1].Trim();
+                if (pair.Length != 2 || string.IsNullOrWhiteSpace(pair[0]) || string.IsNullOrWhiteSpace(pair[1]))
+                {
+                    _console.WriteError($"The provided label '{string.Join('=', pair)}' is not valid.  Labels must be in the format KEY=VALUE and multiple labels must be separated by commas.");
+                    return;
+                }
+            }
+        }
 
         var map = await _kindVersionInfo.GetVersionInfoAsync();
         string? kindVersion = null;
@@ -89,7 +115,7 @@ public class CreateClusterCommand : Command
             _console.WriteWarning($"Kind version {kindVersion} is not supported by the current VDK.");
             return;
         }
-        var kubeVersion = kubeVersionRequested ?? await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion);
+        var kubeVersion = string.IsNullOrWhiteSpace(kubeVersionRequested) ? await _kindVersionInfo.GetDefaultKubernetesVersionAsync(kindVersion) : kubeVersionRequested.Trim();
         var image = map.FindImage(kindVersion, kubeVersion);
         if (image is null)
         {
@@ -198,15 +224,56 @@ public class CreateClusterCommand : Command
         {
             _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
                 masterNode.ExtraPortMappings.Last().HostPort);
-            var ns = _clientFunc(name.ToLower()).Get<V1Namespace>("vega-system");
+            var client = _clientFunc(name.ToLower());
+            var ns = client.Get<V1Namespace>("vega-system");
             ns.EnsureMetadata().EnsureAnnotations()[_configs.MasterNodeAnnotation] = _yaml.Serialize(masterNode);
-            _clientFunc(name.ToLower()).Update(ns);
+            client.Update(ns);
+
+            // Write TenantId ConfigMap in vega-system
+            var tenantId = await _auth.GetTenantIdAsync();
+            if (!string.IsNullOrWhiteSpace(tenantId))
+            {
+                V1ConfigMap? cfg = null;
+                try
+                {
+                    cfg = client.Get<V1ConfigMap>("vega-tenant", "vega-system");
+                }
+                catch { /* not found, will create */ }
+
+                if (cfg is null)
+                {
+                    cfg = new V1ConfigMap
+                    {
+                        Metadata = new V1ObjectMeta { Name = "vega-tenant", NamespaceProperty = "vega-system" },
+                        Data = new Dictionary<string, string> { ["TenantId"] = tenantId }
+                    };
+                    client.Create(cfg);
+                }
+                else
+                {
+                    cfg.Data ??= new Dictionary<string, string>();
+                    cfg.Data["TenantId"] = tenantId;
+                    // add the label pairs here
+                    foreach (var pair in pairs)
+                    {
+                        if (pair.Length == 2 && !string.IsNullOrWhiteSpace(pair[0]) && !string.IsNullOrWhiteSpace(pair[1]))
+                        {
+                            cfg.Data[$"{pair[0]}"] = pair[1];
+                        }
+                    }
+                    client.Update(cfg);
+                }
+            }
+            else
+            {
+                _console.WriteWarning("No TenantId found in token; skipping tenant config map.");
+            }
         }
         catch (Exception e)
         {
             // print the stack trace
             _console.WriteLine(e.StackTrace);
-            _console.WriteError("Failed to update reverse proxy: " + e.Message);
+            _console.WriteError("Failed to update reverse proxy or tenant config: " + e.Message);
             throw e;
         }
     }

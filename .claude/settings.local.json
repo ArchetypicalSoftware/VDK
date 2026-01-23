@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate System.CommandLine to 2.0.2 stable release\n\nThe System.CommandLine package was upgraded from the beta version to the\nstable 2.0.2 release, which introduced breaking API changes that required\nupdates across all CLI command files.\n\nAPI changes addressed:\n- AddCommand\\(\\) -> Subcommands.Add\\(\\) for adding subcommands\n- AddOption\\(\\) -> Options.Add\\(\\) for adding options\n- SetHandler\\(\\) extension -> SetAction\\(\\) method for command handlers\n- Option constructor signature changed: description is now set via\n  Description property instead of constructor parameter\n- InvokeAsync\\(\\) on Command -> Parse\\(args\\).InvokeAsync\\(\\) in Program.cs\n\nFiles modified:\n- All command files under cli/src/Vdk/Commands/\n- cli/src/Vdk/Program.cs\n\nAlso normalizes line endings to LF per .gitattributes.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

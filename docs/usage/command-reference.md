@@ -1,48 +1,62 @@
-# VDK Command Reference
+# Vega Command Reference
 
-This is a comprehensive reference for all VDK commands.
+This is a comprehensive reference for all Vega commands.
 
-## `vdk create cluster`
+## `vega login`
+
+Authenticate using the OAuth2 Device Code flow. Supports multiple profiles.
+
+**Usage:**
+`vega login [--profile <name>]`
+
+## `vega logout`
+
+Remove local credentials for the current or specified profile.
+
+**Usage:**
+`vega logout [--profile <name>]`
+
+## `vega create cluster`
 
 Creates a new KinD cluster.
 
 **Usage:**
-`vdk create cluster [flags]`
+`vega create cluster [flags]`
 
 **Flags:**
 
-*   `--name string`: Name for the cluster (default: `kind`)
-*   `--version string`: Kubernetes version to use (e.g., `v1.25.3`). If not specified, uses KinD's default.
-*   `--config string`: Path to a KinD configuration file.
-*   `--nodes int`: Total number of nodes (control-plane + worker).
-*   `--control-planes int`: Number of control-plane nodes.
-*   `--wait duration`: Wait time for the control plane to be ready (default: `5m`).
+*   `--Name, -n string`: Name for the cluster (default: `vega` with auto-increment if taken)
+*   `--KubeVersion, -k string`: Kubernetes version (CLI resolves compatible image for KinD version)
+*   `--ControlPlaneNodes, -c int`: Number of control-plane nodes (default configured in CLI)
+*   `--Workers, -w int`: Number of worker nodes (default configured in CLI)
 
 *(Add other commands like `get`, `delete`, `version`, etc., as they are developed)*
 
-## `vdk get clusters`
+## `vega list clusters`
 
-Lists existing KinD clusters managed by VDK.
+Lists existing KinD clusters managed by Vega.
 
-## `vdk delete cluster`
+## `vega remove cluster`
 
 Deletes a KinD cluster.
 
 **Flags:**
 
-*   `--name string`: Name of the cluster to delete (default: `kind`)
+*   `--Name, -n string`: Name of the cluster to delete
 
-## `vdk get kubeconfig`
+## `vega list kubernetes-versions`
+
+Lists supported Kubernetes versions for your installed KinD version.
+
+## `vega get kubeconfig`
 
 Gets the kubeconfig path for a cluster.
 
 **Flags:**
 
-*   `--name string`: Name of the cluster (default: `kind`)
+*   `--Name, -n string`: Name of the cluster (default: `vega`)
 
-# `vdk create cloud-provider-kind`
+# `vega create cloud-provider-kind`
 
 Creates a cloud Provider KIND docker image which runs as a standalone binary in the local machine 
 and will connect to the Kind cluster and provision new Load balancer containers for the services.
-
-
