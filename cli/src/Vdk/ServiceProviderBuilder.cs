@@ -49,6 +49,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<RemoveCloudProviderKindCommand>()
             .AddSingleton<UpdateCommand>()
             .AddSingleton<UpdateKindVersionInfoCommand>()
+            .AddSingleton<UpdateClustersCommand>()
             .AddSingleton<IKindVersionInfoService, KindVersionInfoService>()
             .AddSingleton<IConsole, SystemConsole>()
             .AddSingleton<IFileSystem, FileSystem>()
