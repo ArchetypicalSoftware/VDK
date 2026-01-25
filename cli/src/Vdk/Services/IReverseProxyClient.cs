@@ -13,4 +13,10 @@ public interface IReverseProxyClient
     void List();
 
     bool Exists();
+
+    /// <summary>
+    /// Regenerates the nginx configuration for all VDK clusters.
+    /// Useful for applying config changes (like WebSocket support) to existing clusters.
+    /// </summary>
+    void RegenerateConfigs();
 }

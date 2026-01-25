@@ -40,6 +40,13 @@
     <None Update="ConfigMounts\hosts.toml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="ConfigMounts\zot-config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="images\**" CopyToOutputDirectory="PreserveNewest" LinkBase="images" />
   </ItemGroup>
 
 </Project>

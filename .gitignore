@@ -487,3 +487,5 @@ $RECYCLE.BIN/
 
 # Intellij
 *.iml
+*.db
+/cli/src/Vdk/images

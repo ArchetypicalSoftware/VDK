@@ -13,18 +13,21 @@ public class UpdateClustersCommand : Command
     private readonly IKindClient _kind;
     private readonly IFileSystem _fileSystem;
     private readonly Func<string, IKubernetesClient> _clientFunc;
+    private readonly IReverseProxyClient _reverseProxy;
 
     public UpdateClustersCommand(
         IConsole console,
         IKindClient kind,
         IFileSystem fileSystem,
-        Func<string, IKubernetesClient> clientFunc)
+        Func<string, IKubernetesClient> clientFunc,
+        IReverseProxyClient reverseProxy)
         : base("clusters", "Update cluster configurations (certificates, etc.)")
     {
         _console = console;
         _kind = kind;
         _fileSystem = fileSystem;
         _clientFunc = clientFunc;
+        _reverseProxy = reverseProxy;
 
         var verboseOption = new Option<bool>("--verbose") { Description = "Enable verbose output for debugging" };
         verboseOption.Aliases.Add("-v");
@@ -72,6 +75,20 @@ public class UpdateClustersCommand : Command
         }
 
         _console.WriteLine("Cluster certificate update complete.");
+
+        // Regenerate nginx configuration for all clusters (adds WebSocket support, etc.)
+        _console.WriteLine();
+        if (_reverseProxy.Exists())
+        {
+            _reverseProxy.RegenerateConfigs();
+        }
+        else
+        {
+            if (verbose)
+            {
+                _console.WriteLine("[DEBUG] Reverse proxy not running, skipping nginx config regeneration.");
+            }
+        }
     }
 
     private async Task UpdateClusterCertificates(string clusterName, byte[] localCert, byte[] localKey, bool verbose)
