@@ -8,13 +8,30 @@ public class DockerHubClient(IDockerEngine docker, IConsole console) : IHubClien
     public void CreateRegistry()
     {
         if (ExistRegistry()) return;
-        console.WriteLine("Creating Vega VDK Registry");
+        console.WriteLine("Creating Vega VDK Registry (Zot)");
         console.WriteLine(" - This may take a few minutes...");
+
+        // Mount the config file and images directory for persistence
+        var configFile = new FileInfo(Path.Combine("ConfigMounts", "zot-config.json"));
+        var imagesDir = new DirectoryInfo("images");
+
+        // Ensure images directory exists
+        if (!imagesDir.Exists)
+        {
+            imagesDir.Create();
+        }
+
+        var volumes = new[]
+        {
+            new FileMapping { Source = configFile.FullName, Destination = "/etc/zot/config.json" },
+            new FileMapping { Source = imagesDir.FullName, Destination = "/var/lib/registry" }
+        };
+
         docker.Run(Containers.RegistryImage,
             Containers.RegistryName,
             [PortMapping.DefaultRegistryPortMapping],
             null,
-            null,
+            volumes,
             null);
     }
 

@@ -175,6 +175,11 @@ internal class ReverseProxyClient : IReverseProxyClient
             writer.WriteLine("        proxy_set_header X-Real-IP $remote_addr;");
             writer.WriteLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
             writer.WriteLine("        proxy_set_header X-Forwarded-Proto $scheme;");
+            writer.WriteLine();
+            writer.WriteLine("        # Support WebSocket protocol upgrades");
+            writer.WriteLine("        proxy_http_version 1.1;");
+            writer.WriteLine("        proxy_set_header Upgrade $http_upgrade;");
+            writer.WriteLine("        proxy_set_header Connection \"upgrade\";");
             writer.WriteLine("    }");
             writer.WriteLine("}");
             writer.WriteLine($"##### END {clusterName}");
@@ -413,6 +418,43 @@ internal class ReverseProxyClient : IReverseProxyClient
     public void List()
     {
         throw new NotImplementedException();
+    }
+
+    public void RegenerateConfigs()
+    {
+        var conf = new FileInfo(NginxConf);
+        if (!conf.Exists)
+        {
+            _console.WriteWarning("Nginx configuration file does not exist. Run 'vega create proxy' first.");
+            return;
+        }
+
+        _console.WriteLine("Regenerating nginx configuration for all VDK clusters...");
+
+        // Reinitialize the conf file with the hub server block
+        conf.Delete();
+        InitConfFile(conf);
+
+        // Iterate through all VDK clusters and add their server blocks
+        var clusters = _kind.ListClusters();
+        var vdkClusters = clusters.Where(c => c.isVdk && c.master != null && c.master.HttpsHostPort.HasValue).ToList();
+
+        if (vdkClusters.Count == 0)
+        {
+            _console.WriteLine("No VDK clusters found to configure.");
+            ReloadConfigs();
+            return;
+        }
+
+        foreach (var cluster in vdkClusters)
+        {
+            _console.WriteLine($"  Adding cluster '{cluster.name}' to nginx configuration");
+            PatchNginxConfig(cluster.name, cluster.master!.HttpsHostPort!.Value);
+        }
+
+        _console.WriteLine($"Regenerated configuration for {vdkClusters.Count} cluster(s).");
+        ReloadConfigs();
+        _console.WriteLine("Nginx configuration reloaded.");
     }
 
     private static int GetEnvironmentVariableAsInt(string variableName, int defaultValue = 0)
