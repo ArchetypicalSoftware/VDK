@@ -1,34 +1,107 @@
 # Development Setup
 
-Setting up your environment to contribute to VDK.
+Setting up your environment to contribute to Vega.
 
 ## Prerequisites
 
--   [Go](https://go.dev/doc/install) (Specify required version, e.g., 1.19+)
--   [Docker](https://docs.docker.com/get-docker/)
--   [Make](https://www.gnu.org/software/make/) (Optional, if using Makefiles)
--   [Git](https://git-scm.com/)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Git](https://git-scm.com/)
+- [KinD](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) (Kubernetes in Docker)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+
+### Recommended: Using Devbox
+
+For a reproducible development environment, use [Devbox](https://www.jetpack.io/devbox/docs/):
+
+1. Install Devbox:
+
+   ```bash
+   curl -fsSL https://get.jetify.com/devbox | bash
+   ```
+
+2. Start a Devbox shell in the repository:
+
+   ```bash
+   devbox shell
+   ```
+
+This automatically sets up all required dependencies.
 
 ## Building from Source
 
-1.  Clone the repository (or your fork).
-2.  Navigate to the project directory.
-3.  Run the build command:
+1. Clone the repository (or your fork):
 
-    ```bash
-    go build -o vdk ./cmd/vdk
-    # Or, if using Make:
-    # make build
-    ```
+   ```bash
+   git clone https://github.com/ArchetypicalSoftware/VDK.git
+   cd VDK
+   ```
+
+2. Navigate to the CLI project:
+
+   ```bash
+   cd cli/src/Vdk
+   ```
+
+3. Build the project:
+
+   ```bash
+   dotnet build
+   ```
+
+4. Run the CLI:
+
+   ```bash
+   dotnet run -- --help
+   ```
 
 ## Running Tests
 
+From the repository root:
+
 ```bash
-go test ./...
-# Or, if using Make:
-# make test
+cd cli
+dotnet test
 ```
 
-## Linting
+Or run specific tests:
 
-*(Instructions for running linters, e.g., `golangci-lint`)*
+```bash
+dotnet test --filter "FullyQualifiedName~YourTestName"
+```
+
+## Publishing
+
+To create a self-contained executable:
+
+```bash
+cd cli/src/Vdk
+dotnet publish -c Release
+```
+
+The output will be in `bin/Release/net10.0/publish/`.
+
+## Project Structure
+
+```
+VDK/
+├── cli/
+│   └── src/
+│       └── Vdk/
+│           ├── Commands/       # CLI command implementations
+│           ├── Services/       # Business logic and integrations
+│           ├── Models/         # Data models
+│           ├── Constants/      # Configuration constants
+│           ├── Certs/          # TLS certificates
+│           └── ConfigMounts/   # Container configuration files
+├── docs/                       # Documentation
+└── clusters/                   # Flux GitOps configurations
+```
+
+## Key Technologies
+
+- **System.CommandLine**: CLI framework
+- **KubeOps.KubernetesClient**: Kubernetes API client
+- **Docker.DotNet**: Docker API client
+- **YamlDotNet**: YAML serialization
+- **Flux CD**: GitOps toolkit
