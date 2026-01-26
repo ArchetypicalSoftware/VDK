@@ -94,8 +94,7 @@ VDK/
 │           ├── Constants/      # Configuration constants
 │           ├── Certs/          # TLS certificates
 │           └── ConfigMounts/   # Container configuration files
-├── docs/                       # Documentation
-└── clusters/                   # Flux GitOps configurations
+└── docs/                       # Documentation
 ```
 
 ## Key Technologies

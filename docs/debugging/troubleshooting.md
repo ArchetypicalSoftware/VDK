@@ -12,7 +12,7 @@ Common issues and how to resolve them.
   kind export logs --name <cluster-name> ./kind-logs
   ```
 
-  Replace `<cluster-name>` with the name of the cluster that failed (or `vdk` for the default).
+  Replace `<cluster-name>` with the name of the cluster that failed (or `vdk` if using the default cluster name).
 - **Network Issues:** Firewalls or VPNs can sometimes interfere with KinD's networking.
 - **KinD Version Mismatch:** If you get version-related errors, update the version info:
 

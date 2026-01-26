@@ -63,7 +63,7 @@ vega create proxy
 
 ### `vega create cloud-provider-kind`
 
-Creates a Cloud Provider KIND container that provisions load balancers for services in KinD clusters.
+Creates a Cloud Provider KinD container that provisions load balancers for services in KinD clusters.
 
 **Usage:**
 ```bash
@@ -127,7 +127,7 @@ vega remove cloud-provider-kind
 
 ### `vega list clusters`
 
-Lists all VDK-managed KinD clusters.
+Lists all Vega-managed KinD clusters.
 
 **Usage:**
 ```bash
@@ -161,7 +161,7 @@ vega update k8s
 ### `vega update clusters`
 
 Updates cluster configurations including TLS certificates. This command:
-- Checks all VDK clusters for outdated certificates
+- Checks all Vega clusters for outdated certificates
 - Updates Vega-managed TLS secrets (`dev-tls` or annotated with `vega.dev/managed=true`)
 - Restarts gateway deployments to pick up new certificates
 - Regenerates nginx reverse proxy configuration
