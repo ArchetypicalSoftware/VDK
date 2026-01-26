@@ -8,7 +8,7 @@ Learn how to manage your Vega-created KinD clusters.
 vega list clusters
 ```
 
-This lists all VDK-managed clusters. Example output:
+This lists all Vega-managed clusters. Example output:
 
 ```
 vdk
@@ -50,7 +50,7 @@ vega update clusters
 
 This command:
 
-- Scans all VDK clusters for Vega-managed TLS secrets
+- Scans all Vega clusters for Vega-managed TLS secrets
 - Updates certificates that don't match the local certificates
 - Restarts gateway deployments to pick up new certificates
 - Regenerates nginx reverse proxy configuration
@@ -91,9 +91,9 @@ Remove it:
 vega remove proxy
 ```
 
-### Cloud Provider KIND
+### Cloud Provider KinD
 
-Create the Cloud Provider KIND for load balancer support:
+Create the Cloud Provider KinD for load balancer support:
 
 ```bash
 vega create cloud-provider-kind
@@ -119,7 +119,7 @@ Verify connectivity:
 kubectl cluster-info --context kind-my-cluster
 ```
 
-## Updating Kind Version Information
+## Updating KinD Version Information
 
 If you've updated KinD and need to enable new Kubernetes versions:
 
