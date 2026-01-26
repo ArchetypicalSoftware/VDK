@@ -1,48 +1,185 @@
-# VDK Command Reference
+# Vega Command Reference
 
-This is a comprehensive reference for all VDK commands.
+This is a comprehensive reference for all Vega CLI commands.
 
-## `vdk create cluster`
+## Root Commands
 
-Creates a new KinD cluster.
+### `vega init`
+
+Initializes the complete Vega development environment. This command:
+- Creates the reverse proxy (nginx)
+- Creates the container registry (Zot)
+- Creates a default KinD cluster
 
 **Usage:**
-`vdk create cluster [flags]`
+```bash
+vega init
+```
+
+---
+
+## Create Commands
+
+### `vega create cluster`
+
+Creates a new KinD cluster with Vega configuration.
+
+**Usage:**
+```bash
+vega create cluster [flags]
+```
 
 **Flags:**
 
-*   `--name string`: Name for the cluster (default: `kind`)
-*   `--version string`: Kubernetes version to use (e.g., `v1.25.3`). If not specified, uses KinD's default.
-*   `--config string`: Path to a KinD configuration file.
-*   `--nodes int`: Total number of nodes (control-plane + worker).
-*   `--control-planes int`: Number of control-plane nodes.
-*   `--wait duration`: Wait time for the control plane to be ready (default: `5m`).
+| Flag | Alias | Default | Description |
+|------|-------|---------|-------------|
+| `--Name` | `-n` | `vdk` | Name for the cluster |
+| `--ControlPlaneNodes` | `-c` | `1` | Number of control-plane nodes |
+| `--Workers` | `-w` | `2` | Number of worker nodes |
+| `--KubeVersion` | `-k` | `1.29` | Kubernetes API version |
 
-*(Add other commands like `get`, `delete`, `version`, etc., as they are developed)*
+**Example:**
+```bash
+vega create cluster --Name my-cluster --Workers 3 --KubeVersion 1.30
+```
 
-## `vdk get clusters`
+### `vega create registry`
 
-Lists existing KinD clusters managed by VDK.
+Creates the Vega container registry (Zot) for local image storage.
 
-## `vdk delete cluster`
+**Usage:**
+```bash
+vega create registry
+```
 
-Deletes a KinD cluster.
+### `vega create proxy`
+
+Creates the Vega reverse proxy (nginx) for TLS termination.
+
+**Usage:**
+```bash
+vega create proxy
+```
+
+### `vega create cloud-provider-kind`
+
+Creates a Cloud Provider KinD container that provisions load balancers for services in KinD clusters.
+
+**Usage:**
+```bash
+vega create cloud-provider-kind
+```
+
+---
+
+## Remove Commands
+
+### `vega remove cluster`
+
+Removes a KinD cluster.
+
+**Usage:**
+```bash
+vega remove cluster [flags]
+```
 
 **Flags:**
 
-*   `--name string`: Name of the cluster to delete (default: `kind`)
+| Flag | Alias | Default | Description |
+|------|-------|---------|-------------|
+| `--Name` | `-n` | `vdk` | Name of the cluster to remove |
 
-## `vdk get kubeconfig`
+**Example:**
+```bash
+vega remove cluster --Name my-cluster
+```
 
-Gets the kubeconfig path for a cluster.
+### `vega remove registry`
+
+Removes the Vega container registry.
+
+**Usage:**
+```bash
+vega remove registry
+```
+
+### `vega remove proxy`
+
+Removes the Vega reverse proxy.
+
+**Usage:**
+```bash
+vega remove proxy
+```
+
+### `vega remove cloud-provider-kind`
+
+Removes the Cloud Provider KIND container.
+
+**Usage:**
+```bash
+vega remove cloud-provider-kind
+```
+
+---
+
+## List Commands
+
+### `vega list clusters`
+
+Lists all Vega-managed KinD clusters.
+
+**Usage:**
+```bash
+vega list clusters
+```
+
+### `vega list kubernetes-versions`
+
+Lists available Kubernetes versions for the installed KinD version.
+
+**Usage:**
+```bash
+vega list kubernetes-versions
+```
+
+---
+
+## Update Commands
+
+### `vega update kind-version-info`
+
+Updates the KinD version information cache. This maps KinD versions to available Kubernetes versions and enables support for new Kubernetes releases.
+
+**Usage:**
+```bash
+vega update kind-version-info
+# or use the alias:
+vega update k8s
+```
+
+### `vega update clusters`
+
+Updates cluster configurations including TLS certificates. This command:
+- Checks all Vega clusters for outdated certificates
+- Updates Vega-managed TLS secrets (`dev-tls` or annotated with `vega.dev/managed=true`)
+- Restarts gateway deployments to pick up new certificates
+- Regenerates nginx reverse proxy configuration
+
+**Usage:**
+```bash
+vega update clusters [flags]
+```
 
 **Flags:**
 
-*   `--name string`: Name of the cluster (default: `kind`)
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `--verbose` | `-v` | Enable verbose output for debugging |
 
-# `vdk create cloud-provider-kind`
-
-Creates a cloud Provider KIND docker image which runs as a standalone binary in the local machine 
-and will connect to the Kind cluster and provision new Load balancer containers for the services.
+**Example:**
+```bash
+vega update clusters --verbose
+```
 
 
