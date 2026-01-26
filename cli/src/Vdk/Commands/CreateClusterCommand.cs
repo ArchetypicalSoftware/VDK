@@ -51,7 +51,7 @@ public class CreateClusterCommand : Command
         controlNodes.Aliases.Add("-c");
         var workers = new Option<int>("--Workers") { DefaultValueFactory = _ => Defaults.WorkerNodes, Description = "The number of worker nodes in the cluster." };
         workers.Aliases.Add("-w");
-        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "1.29", Description = "The kubernetes api version." };
+        var kubeVersion = new Option<string>("--KubeVersion") { DefaultValueFactory = _ => "1.32", Description = "The kubernetes api version." };
         kubeVersion.Aliases.Add("-k");
 
         Options.Add(nameOption);
@@ -111,6 +111,16 @@ public class CreateClusterCommand : Command
             return;
         }
 
+        // Write hosts.toml to a temp file for containerd registry config
+        // This ensures the file is accessible to Docker regardless of working directory
+        var hostsTomlContent = """
+            server = "http://host.docker.internal:5000"
+            [host."http://host.docker.internal:5000"]
+              capabilities = ["pull", "resolve"]
+            """;
+        var hostsTomlPath = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), $"hosts-{Guid.NewGuid()}.toml");
+        await _fileSystem.File.WriteAllTextAsync(hostsTomlPath, hostsTomlContent);
+
         var cluster = new KindCluster();
         for (int index = 0; index < controlPlaneNodes; index++)
         {
@@ -127,7 +137,7 @@ public class CreateClusterCommand : Command
             {
                 new()
                 {
-                    HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName,
+                    HostPath = hostsTomlPath,
                     ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
                 }
             };
@@ -144,7 +154,7 @@ public class CreateClusterCommand : Command
                 {
                     new()
                     {
-                        HostPath = _fileSystem.FileInfo.New("ConfigMounts/hosts.toml").FullName,
+                        HostPath = hostsTomlPath,
                         ContainerPath = "/etc/containerd/certs.d/hub.dev-k8s.cloud/hosts.toml"
                     }
                 }
