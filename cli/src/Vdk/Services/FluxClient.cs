@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -114,6 +115,91 @@ public class FluxClient : IFluxClient
         }
 
         _console.WriteLine("Flux bootstrap complete.");
-        
+
+    }
+
+    public bool WaitForKustomizations(string clusterName, int maxAttempts = 60, int delaySeconds = 5)
+    {
+        _console.WriteLine("Waiting for Flux kustomizations to reconcile...");
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                var result = _client(clusterName).ApiClient.CustomObjects
+                    .ListNamespacedCustomObject(
+                        "kustomize.toolkit.fluxcd.io", "v1",
+                        "flux-system", "kustomizations");
+
+                var json = JsonSerializer.Serialize(result);
+                using var doc = JsonDocument.Parse(json);
+                var items = doc.RootElement.GetProperty("items");
+
+                if (items.GetArrayLength() == 0)
+                {
+                    if (attempt % 5 == 0)
+                        _console.WriteLine("  No kustomizations found yet. Waiting...");
+                    Thread.Sleep(delaySeconds * 1000);
+                    continue;
+                }
+
+                int total = items.GetArrayLength();
+                int readyCount = 0;
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    var name = item.GetProperty("metadata").GetProperty("name").GetString();
+                    bool isReady = false;
+
+                    if (item.TryGetProperty("status", out var status) &&
+                        status.TryGetProperty("conditions", out var conditions))
+                    {
+                        foreach (var condition in conditions.EnumerateArray())
+                        {
+                            if (condition.GetProperty("type").GetString() == "Ready")
+                            {
+                                var condStatus = condition.GetProperty("status").GetString();
+                                if (condStatus == "True")
+                                {
+                                    isReady = true;
+                                }
+                                else if (attempt % 5 == 0)
+                                {
+                                    var reason = condition.TryGetProperty("reason", out var r)
+                                        ? r.GetString() : "Unknown";
+                                    var message = condition.TryGetProperty("message", out var m)
+                                        ? m.GetString() : "";
+                                    _console.WriteLine(
+                                        $"  Kustomization '{name}' not ready: {reason} - {message}");
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isReady) readyCount++;
+                }
+
+                if (attempt % 5 == 0 || readyCount == total)
+                    _console.WriteLine($"  Kustomizations ready: {readyCount}/{total}");
+
+                if (readyCount == total)
+                {
+                    _console.WriteLine("All Flux kustomizations are ready.");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (attempt % 5 == 0)
+                    _console.WriteLine($"  Error checking kustomizations: {ex.Message}. Retrying...");
+            }
+
+            Thread.Sleep(delaySeconds * 1000);
+        }
+
+        _console.WriteWarning(
+            "Timed out waiting for Flux kustomizations to reconcile. Proceeding anyway...");
+        return false;
     }
 }

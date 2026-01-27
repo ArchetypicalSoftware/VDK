@@ -204,6 +204,10 @@ public class CreateClusterCommand : Command
         }
 
         _flux.Bootstrap(name.ToLower(), "./clusters/default", branch: "main");
+
+        // Wait for all Flux kustomizations to reconcile before configuring the reverse proxy
+        _flux.WaitForKustomizations(name.ToLower());
+
         try
         {
             _reverseProxy.UpsertCluster(name.ToLower(), masterNode.ExtraPortMappings.First().HostPort,
