@@ -1,5 +1,6 @@
 using Vdk.Models;
 using Vdk.Services;
+using Xunit;
 
 namespace Vdk.Tests
 {
@@ -8,16 +9,24 @@ namespace Vdk.Tests
         private readonly FallbackDockerEngine _engine = new();
         private readonly string _containerName = $"vdk_test_{Guid.NewGuid().ToString().Substring(0, 8)}";
         private readonly string _image = "alpine";
+        private readonly bool _dockerAvailable;
 
         public FallbackDockerEngineTests()
         {
-            // Pull image to avoid network flakiness in tests
-            FallbackDockerEngine.RunProcess("docker", $"pull {_image}", out _, out _);
+            // Check if Docker is available before running tests
+            _dockerAvailable = _engine.CanConnect();
+            if (_dockerAvailable)
+            {
+                // Pull image to avoid network flakiness in tests
+                FallbackDockerEngine.RunProcess("docker", $"pull {_image}", out _, out _);
+            }
         }
 
-        [Fact]
+        [SkippableFact]
         public void Run_And_Exists_And_Delete_Works()
         {
+            Skip.IfNot(_dockerAvailable, "Docker is not available on this machine");
+
             var result = _engine.Run(_image, _containerName, null, null, null, new[] { "sleep", "60" });
             Assert.True(result, "Container should start");
             Assert.True(_engine.Exists(_containerName), "Container should exist and be running");
@@ -25,9 +34,11 @@ namespace Vdk.Tests
             Assert.False(_engine.Exists(_containerName, false), "Container should not exist after delete");
         }
 
-        [Fact]
+        [SkippableFact]
         public void Stop_And_Exec_Works()
         {
+            Skip.IfNot(_dockerAvailable, "Docker is not available on this machine");
+
             var started = _engine.Run(_image, _containerName, null, null, null, new[] { "sleep", "60" });
             Assert.True(started, "Container should start");
             // Exec a command
@@ -40,9 +51,11 @@ namespace Vdk.Tests
             Assert.True(_engine.Delete(_containerName), "Container should be deleted");
         }
 
-        [Fact]
+        [SkippableFact]
         public void Run_With_Ports_And_Volumes_Works()
         {
+            Skip.IfNot(_dockerAvailable, "Docker is not available on this machine");
+
             var ports = new[] { new PortMapping { HostPort = 12345, ContainerPort = 80 } };
             var volumes = new[] { new FileMapping { Source = "/tmp", Destination = "/mnt" } };
             var result = _engine.Run(_image, _containerName, ports, null, volumes, new[] { "sleep", "60" });
