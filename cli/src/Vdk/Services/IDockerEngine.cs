@@ -14,5 +14,7 @@ public interface IDockerEngine
 
     bool Exec(string name, string[] commands);
 
+    bool Restart(string name);
+
     bool CanConnect();
 }

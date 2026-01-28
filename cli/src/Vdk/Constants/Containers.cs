@@ -3,7 +3,7 @@ namespace Vdk.Constants;
 public static class Containers
 {
     public const string RegistryName = "vega-registry";
-    public const string RegistryImage = "ghcr.io/project-zot/zot-linux-amd64:v2.1.0";
+    public const string RegistryImage = "ghcr.io/project-zot/zot:v2.1.0";
     public const int RegistryContainerPort = 5000;
     public const int RegistryHostPort = 5000;
     public const string ProxyName = "vega-proxy";

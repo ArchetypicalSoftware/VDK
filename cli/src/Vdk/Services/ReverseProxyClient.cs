@@ -34,60 +34,103 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     public void Create()
     {
-        var proxyExists = Exists();
-        if (!proxyExists)
+        // Check if the container exists (running or stopped)
+        if (_docker.Exists(Containers.ProxyName))
         {
-            _console.WriteLine("Creating Vega VDK Proxy");
-            _console.WriteLine(" - This may take a few minutes...");
-            var conf = new FileInfo(NginxConf);
-            if (!conf.Exists)
-            {
-                if (!conf.Directory!.Exists)
-                {
-                    conf.Directory.Create();
-                }
+            _console.WriteLine("Vega VDK Proxy is running.");
+            return;
+        }
 
-                InitConfFile(conf);
-            }
-            else
+        // Container exists but is stopped - restart it
+        if (_docker.Exists(Containers.ProxyName, false))
+        {
+            _console.WriteLine("Vega VDK Proxy exists but is not running. Restarting...");
+            _docker.Restart(Containers.ProxyName);
+            return;
+        }
+
+        // Container does not exist at all - create it
+        _console.WriteLine("Creating Vega VDK Proxy");
+        _console.WriteLine(" - This may take a few minutes...");
+        var conf = new FileInfo(NginxConf);
+        if (!conf.Exists)
+        {
+            if (!conf.Directory!.Exists)
             {
-                _console.WriteLine($" - Reverse proxy configuration for {conf.FullName} exists, running a quick validation...");
-                conf.Delete();
-                InitConfFile(conf);
-                // iterate the clusters and create the endpoints for each
-                _kind.ListClusters().ForEach(tuple =>
-                {
-                    if (tuple is { isVdk: true, master: not null } && tuple.master.HttpsHostPort.HasValue)
-                    {
-                        _console.WriteLine($" - Adding cluster {tuple.name} to reverse proxy configuration");
-                        UpsertCluster(tuple.name, tuple.master.HttpsHostPort.Value, tuple.master.HttpHostPort.Value, false);
-                    }
-                });
+                conf.Directory.Create();
             }
-            var fullChain = new FileInfo(Path.Combine("Certs", "fullchain.pem"));
-            var privKey = new FileInfo(Path.Combine("Certs", "privkey.pem"));
-            try
-            {
-                _docker.Run(Containers.ProxyImage, Containers.ProxyName,
-                    new[] { new PortMapping() { HostPort = ReverseProxyHostPort, ContainerPort = 443 } },
-                    null,
-                    new[]
-                    {
-                        new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName },
-                        new FileMapping() { Destination = "/etc/certs/fullchain.pem", Source = fullChain.FullName },
-                        new FileMapping() { Destination = "/etc/certs/privkey.pem", Source = privKey.FullName },
-                    },
-                    null);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error creating reverse proxy: {e}");
-            }
+
+            InitConfFile(conf);
         }
         else
         {
-            _console.WriteLine("Vega VDK Proxy already created");
+            _console.WriteLine($" - Reverse proxy configuration for {conf.FullName} exists, running a quick validation...");
+            conf.Delete();
+            InitConfFile(conf);
+            // iterate the clusters and create the endpoints for each
+            _kind.ListClusters().ForEach(tuple =>
+            {
+                if (tuple is { isVdk: true, master: not null } && tuple.master.HttpsHostPort.HasValue)
+                {
+                    _console.WriteLine($" - Adding cluster {tuple.name} to reverse proxy configuration");
+                    UpsertCluster(tuple.name, tuple.master.HttpsHostPort.Value, tuple.master.HttpHostPort.Value, false);
+                }
+            });
         }
+        var fullChain = new FileInfo(Path.Combine("Certs", "fullchain.pem"));
+        var privKey = new FileInfo(Path.Combine("Certs", "privkey.pem"));
+
+        // Check for and fix certificate paths that were incorrectly created as directories
+        if (!ValidateAndFixCertificatePath(fullChain.FullName) ||
+            !ValidateAndFixCertificatePath(privKey.FullName))
+        {
+            _console.WriteError("Certificate files are missing. Please ensure Certs/fullchain.pem and Certs/privkey.pem exist.");
+            return;
+        }
+
+        try
+        {
+            _docker.Run(Containers.ProxyImage, Containers.ProxyName,
+                new[] { new PortMapping() { HostPort = ReverseProxyHostPort, ContainerPort = 443 } },
+                null,
+                new[]
+                {
+                    new FileMapping() { Destination = "/etc/nginx/conf.d/vega.conf", Source = conf.FullName },
+                    new FileMapping() { Destination = "/etc/certs/fullchain.pem", Source = fullChain.FullName },
+                    new FileMapping() { Destination = "/etc/certs/privkey.pem", Source = privKey.FullName },
+                },
+                null);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error creating reverse proxy: {e}");
+        }
+    }
+
+    /// <summary>
+    /// Validates a certificate path exists as a file, not a directory.
+    /// On some systems (especially Mac), Docker may incorrectly create directories
+    /// when mounting paths that don't exist. This method detects and removes such directories.
+    /// </summary>
+    private bool ValidateAndFixCertificatePath(string path)
+    {
+        // Check if path exists as a directory (incorrect state)
+        if (Directory.Exists(path))
+        {
+            _console.WriteWarning($"Certificate path '{path}' exists as a directory instead of a file. Removing...");
+            try
+            {
+                Directory.Delete(path, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                _console.WriteError($"Failed to remove directory '{path}': {ex.Message}");
+                return false;
+            }
+        }
+
+        // Now check if the file exists
+        return File.Exists(path);
     }
 
     public bool Exists()
@@ -102,8 +145,6 @@ internal class ReverseProxyClient : IReverseProxyClient
             _console.WriteError(e);
             return true;
         }
-
-        return false;
     }
 
     private void InitConfFile(FileInfo conf)
@@ -257,15 +298,8 @@ internal class ReverseProxyClient : IReverseProxyClient
             return false;
         }
 
-        // insert the new entry after the kubernetes block by searching for the closing brace then inserting it
-
-        var closingBraceIndex = lines.FindIndex(kubernetesBlockIndex, line => line.Trim() == "}");
-        if (closingBraceIndex == -1)
-        {
-            _console.WriteError("CoreDNS Corefile does not contain a closing brace for the kubernetes block. Please check the configuration and try again.");
-            return false;
-        }
-        lines.Insert(closingBraceIndex, rewriteString);
+        // insert the rewrite BEFORE the kubernetes block so it is evaluated first by CoreDNS
+        lines.Insert(kubernetesBlockIndex, rewriteString);
 
         // join the lines back into a single string
         var updatedCorefile = string.Join(Environment.NewLine, lines);
@@ -324,6 +358,16 @@ internal class ReverseProxyClient : IReverseProxyClient
             return true;
         }
 
+        // Validate certificate files before reading
+        var fullChainPath = Path.Combine("Certs", "fullchain.pem");
+        var privKeyPath = Path.Combine("Certs", "privkey.pem");
+        if (!ValidateAndFixCertificatePath(fullChainPath) ||
+            !ValidateAndFixCertificatePath(privKeyPath))
+        {
+            _console.WriteError("Certificate files are missing. Cannot create TLS secret.");
+            return true;
+        }
+
         // write the cert secret to the cluster
         var tls = new V1Secret()
         {
@@ -335,8 +379,8 @@ internal class ReverseProxyClient : IReverseProxyClient
             Type = "kubernetes.io/tls",
             Data = new Dictionary<string, byte[]>
             {
-                { "tls.crt", File.ReadAllBytes("Certs/fullchain.pem") },
-                { "tls.key", File.ReadAllBytes("Certs/privkey.pem") }
+                { "tls.crt", File.ReadAllBytes(fullChainPath) },
+                { "tls.key", File.ReadAllBytes(privKeyPath) }
             }
         };
         var secret = _client(clusterName).Get<V1Secret>("dev-tls", "vega-system");
@@ -351,7 +395,8 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     private void ReloadConfigs()
     {
-        _docker.Exec("nginx", new[] { "nginx", "-s", "reload" });
+        _console.WriteLine("Restarting reverse proxy to apply configuration changes...");
+        _docker.Restart(Containers.ProxyName);
     }
 
     private static StreamWriter ClearCluster(string clusterName)

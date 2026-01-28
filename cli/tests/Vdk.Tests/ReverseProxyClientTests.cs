@@ -120,22 +120,29 @@ namespace Vdk.Tests
         }
 
         [Fact]
-        public void PatchCoreDns_ReturnsFalse_WhenNoClosingBrace()
+        public void PatchCoreDns_InsertsRewriteBeforeKubernetesBlock()
         {
-            // Arrange
+            // Arrange: Corefile with kubernetes block but no closing brace — rewrite should still insert before the kubernetes line
+            var clusterName = "test-cluster";
             var corefile = "kubernetes cluster.local in-addr.arpa ip6.arpa {";
+            var configMap = new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } };
+            var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "coredns-1" } };
             _kubeClientMock.Setup(x => x.Get<V1Service>("kgateway-system-kgateway", "kgateway-system"))
                 .Returns(new V1Service { Metadata = new V1ObjectMeta { Name = "svc", NamespaceProperty = "ns" } });
             _kubeClientMock.Setup(x => x.Get<V1ConfigMap>("coredns", "kube-system"))
-                .Returns(new V1ConfigMap { Data = new Dictionary<string, string> { { "Corefile", corefile } } });
+                .Returns(configMap);
+            _kubeClientMock.Setup(x => x.List<V1Pod>("kube-system", It.IsAny<string>()))
+                .Returns(new List<V1Pod> { pod });
             var client = new ReverseProxyClient(_dockerMock.Object, _clientFunc, _consoleMock.Object, _kindMock.Object);
 
             // Act
-            var result = InvokePatchCoreDns(client, "test-cluster");
+            var result = InvokePatchCoreDns(client, clusterName);
 
-            // Assert
-            Assert.False(result);
-            _consoleMock.Verify(x => x.WriteError(It.Is<string>(s => s.Contains("does not contain a closing brace"))), Times.Once);
+            // Assert — rewrite is inserted before the kubernetes block
+            Assert.True(result);
+            _kubeClientMock.Verify(x => x.Update(It.Is<V1ConfigMap>(cm =>
+                cm.Data["Corefile"].Contains($"rewrite name {clusterName}.dev-k8s.cloud svc.ns.svc.cluster.local"))), Times.Once);
+            _kubeClientMock.Verify(x => x.Delete(pod), Times.Once);
         }
 
         [Fact]
