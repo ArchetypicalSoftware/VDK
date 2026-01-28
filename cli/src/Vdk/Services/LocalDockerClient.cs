@@ -81,14 +81,14 @@ public class LocalDockerClient : IDockerEngine
         IList<ContainerListResponse> containers = _dockerClient.Containers.ListContainersAsync(
             new ContainersListParameters()
             {
-                Filters = new Dictionary<string, IDictionary<string, bool>> { { "label", new Dictionary<string, bool> { { "vega-component", true } } } },
-                Limit = 10,
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "name", new Dictionary<string, bool> { { name, true } } } },
+                All = true,
             }).GetAwaiter().GetResult();
-        var container = containers.FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
-        
+        var container = containers.FirstOrDefault(x => x.Names.Any(n => n.TrimStart('/') == name));
+
         if (container == null) return false;
         if (checkRunning == false) return true;
-        
+
         return container.State == "running" ||
                // this should be started, lets do it
                _dockerClient.Containers.StartContainerAsync(container.ID, new ContainerStartParameters() { }).GetAwaiter().GetResult();
@@ -99,13 +99,13 @@ public class LocalDockerClient : IDockerEngine
         IList<ContainerListResponse> containers = _dockerClient.Containers.ListContainersAsync(
             new ContainersListParameters()
             {
-                Filters = new Dictionary<string, IDictionary<string, bool>> { { "label", new Dictionary<string, bool> { { "vega-component", true } } } },
-                Limit = 10,
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "name", new Dictionary<string, bool> { { name, true } } } },
+                All = true,
             }).GetAwaiter().GetResult();
-        var container = containers.FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
+        var container = containers.FirstOrDefault(x => x.Names.Any(n => n.TrimStart('/') == name));
         if (container != null)
         {
-            _dockerClient.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters(){Force = true});
+            _dockerClient.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters(){Force = true}).GetAwaiter().GetResult();
         }
         return true;
     }
@@ -117,13 +117,11 @@ public class LocalDockerClient : IDockerEngine
 
     public bool Exec(string name, string[] commands)
     {
-        // Get container id from name and labels
         var container = _dockerClient.Containers.ListContainersAsync(
             new ContainersListParameters()
             {
-                Filters = new Dictionary<string, IDictionary<string, bool>> { { "label", new Dictionary<string, bool> { { "vega-component", true } } } },
-                Limit = 10,
-            }).GetAwaiter().GetResult().FirstOrDefault(x => x.Labels["vega-component"].Contains(name));
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "name", new Dictionary<string, bool> { { name, true } } } },
+            }).GetAwaiter().GetResult().FirstOrDefault(x => x.Names.Any(n => n.TrimStart('/') == name));
 
         if (container == null) return false;
         _dockerClient.Exec.ExecCreateContainerAsync(container.ID, new ContainerExecCreateParameters
@@ -132,6 +130,20 @@ public class LocalDockerClient : IDockerEngine
             AttachStderr = true,
             Cmd = commands,
         }).GetAwaiter().GetResult();
+        return true;
+    }
+
+    public bool Restart(string name)
+    {
+        var container = _dockerClient.Containers.ListContainersAsync(
+            new ContainersListParameters()
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>> { { "name", new Dictionary<string, bool> { { name, true } } } },
+                All = true,
+            }).GetAwaiter().GetResult().FirstOrDefault(x => x.Names.Any(n => n.TrimStart('/') == name));
+
+        if (container == null) return false;
+        _dockerClient.Containers.RestartContainerAsync(container.ID, new ContainerRestartParameters()).GetAwaiter().GetResult();
         return true;
     }
 

@@ -82,6 +82,11 @@ namespace Vdk.Services
             return RunProcess("docker", args, out _, out _);
         }
 
+        public bool Restart(string name)
+        {
+            return RunProcess("docker", $"restart {name}", out _, out _);
+        }
+
         public bool CanConnect()
         {
             var args = $"ps"; 

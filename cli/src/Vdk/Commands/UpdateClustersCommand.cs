@@ -42,6 +42,11 @@ public class UpdateClustersCommand : Command
         var fullChainPath = _fileSystem.Path.Combine("Certs", "fullchain.pem");
         var privKeyPath = _fileSystem.Path.Combine("Certs", "privkey.pem");
 
+        // Check for and fix certificate paths that were incorrectly created as directories
+        // This can happen on Mac when Docker creates directories for missing mount paths
+        FixCertificatePathIfDirectory(fullChainPath, verbose);
+        FixCertificatePathIfDirectory(privKeyPath, verbose);
+
         if (!_fileSystem.File.Exists(fullChainPath) || !_fileSystem.File.Exists(privKeyPath))
         {
             _console.WriteError("Certificate files not found. Expected: Certs/fullchain.pem and Certs/privkey.pem");
@@ -411,5 +416,30 @@ public class UpdateClustersCommand : Command
         }
 
         await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Checks if a certificate path exists as a directory instead of a file
+    /// and removes it. On some systems (especially Mac), Docker may incorrectly
+    /// create directories when mounting paths that don't exist.
+    /// </summary>
+    private void FixCertificatePathIfDirectory(string path, bool verbose)
+    {
+        if (_fileSystem.Directory.Exists(path))
+        {
+            _console.WriteWarning($"Certificate path '{path}' exists as a directory instead of a file. Removing...");
+            try
+            {
+                _fileSystem.Directory.Delete(path, recursive: true);
+                if (verbose)
+                {
+                    _console.WriteLine($"[DEBUG] Successfully removed directory '{path}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                _console.WriteError($"Failed to remove directory '{path}': {ex.Message}");
+            }
+        }
     }
 }
