@@ -12,7 +12,12 @@
       "Bash(done)",
       "Bash(for node in idp-control-plane idp-worker idp-worker2)",
       "Bash(kubectl --context kind-idp get pods:*)",
-      "Bash(kubectl --context kind-idp delete pod:*)"
+      "Bash(kubectl --context kind-idp delete pod:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(test:*)"
     ]
   }
 }
