@@ -420,7 +420,7 @@ public class UpdateClustersCommand : Command
 
     /// <summary>
     /// Checks if a certificate path exists as a directory instead of a file
-    /// and removes it. On some systems (especially Mac), Docker may incorrectly
+    /// and removes it. On some systems (especially Mac and WSL2), Docker may incorrectly
     /// create directories when mounting paths that don't exist.
     /// </summary>
     private void FixCertificatePathIfDirectory(string path, bool verbose)
@@ -436,10 +436,73 @@ public class UpdateClustersCommand : Command
                     _console.WriteLine($"[DEBUG] Successfully removed directory '{path}'");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _console.WriteError($"Failed to remove directory '{path}': {ex.Message}");
+                // On WSL2/Linux, directories created by Docker may have root ownership.
+                // Fall back to shell command with elevated permissions.
+                if (TryRemoveDirectoryWithShell(path, verbose))
+                {
+                    if (verbose)
+                    {
+                        _console.WriteLine($"[DEBUG] Successfully removed directory '{path}' using shell command");
+                    }
+                }
+                else
+                {
+                    _console.WriteError($"Failed to remove directory '{path}'. Try running: sudo rm -rf \"{path}\"");
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to remove a directory using shell commands, which may succeed
+    /// when .NET Directory.Delete fails due to permission issues.
+    /// </summary>
+    private bool TryRemoveDirectoryWithShell(string path, bool verbose)
+    {
+        try
+        {
+            var isWindows = System.OperatingSystem.IsWindows();
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = isWindows ? "cmd.exe" : "/bin/sh",
+                Arguments = isWindows
+                    ? $"/c rmdir /s /q \"{path}\""
+                    : $"-c \"rm -rf '{path}'\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            process?.WaitForExit(5000);
+
+            // Check if directory was actually removed
+            if (!_fileSystem.Directory.Exists(path))
+            {
+                return true;
+            }
+
+            // If still exists, try with sudo on Linux/Mac
+            if (!isWindows)
+            {
+                if (verbose)
+                {
+                    _console.WriteLine($"[DEBUG] Attempting sudo rm -rf for '{path}'");
+                }
+                startInfo.Arguments = $"-c \"sudo rm -rf '{path}'\"";
+                using var sudoProcess = System.Diagnostics.Process.Start(startInfo);
+                sudoProcess?.WaitForExit(10000);
+                return !_fileSystem.Directory.Exists(path);
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

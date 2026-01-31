@@ -14,6 +14,16 @@ public class LocalDockerClient : IDockerEngine
 
     public bool Run(string image, string name, PortMapping[]? ports, Dictionary<string, string>? envs, FileMapping[]? volumes, string[]? commands, string? network = null)
     {
+        // Validate and fix volume mount sources before creating container
+        // This prevents Docker from creating directories when files are expected
+        if (volumes != null)
+        {
+            foreach (var volume in volumes)
+            {
+                EnsureVolumeMountSource(volume.Source, volume.Destination);
+            }
+        }
+
         _dockerClient.Images.CreateImageAsync(
           new ImagesCreateParameters
           {
@@ -158,6 +168,54 @@ public class LocalDockerClient : IDockerEngine
         {
             Console.Error.WriteLine($"Error in CanConnect: {ex.Message}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Ensures that a volume mount source path exists correctly.
+    /// Fixes the common Docker issue where mounting a non-existent file creates a directory instead.
+    /// </summary>
+    private void EnsureVolumeMountSource(string sourcePath, string destinationPath)
+    {
+        // Determine if destination looks like a file (has extension) or directory
+        bool isFilePath = Path.HasExtension(destinationPath) && !destinationPath.EndsWith('/') && !destinationPath.EndsWith('\\');
+
+        // Check if path was incorrectly created as a directory when it should be a file
+        if (isFilePath && Directory.Exists(sourcePath))
+        {
+            Console.WriteLine($"Certificate path '{sourcePath}' exists as a directory instead of a file. Removing...");
+            try
+            {
+                Directory.Delete(sourcePath, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to remove directory '{sourcePath}': {ex.Message}",
+                    ex);
+            }
+        }
+
+        // Ensure parent directory exists
+        var parentDir = Path.GetDirectoryName(sourcePath);
+        if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+        {
+            Directory.CreateDirectory(parentDir);
+        }
+
+        // For file paths, ensure the file exists
+        if (isFilePath && !File.Exists(sourcePath))
+        {
+            throw new FileNotFoundException(
+                $"Mount source file does not exist: '{sourcePath}'. " +
+                $"Please ensure the required config file exists before running this command.",
+                sourcePath);
+        }
+
+        // For directory paths, ensure directory exists
+        if (!isFilePath && !Directory.Exists(sourcePath))
+        {
+            Directory.CreateDirectory(sourcePath);
         }
     }
 }

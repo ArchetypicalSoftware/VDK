@@ -15,6 +15,67 @@ public class DockerHubClient(IDockerEngine docker, IConsole console) : IHubClien
         var configFile = new FileInfo(Path.Combine("ConfigMounts", "zot-config.json"));
         var imagesDir = new DirectoryInfo("images");
 
+        // Ensure ConfigMounts directory exists
+        var configMountsDir = configFile.Directory;
+        if (configMountsDir != null && !configMountsDir.Exists)
+        {
+            configMountsDir.Create();
+        }
+
+        // Fix: Check if config file was incorrectly created as a directory by Docker
+        if (Directory.Exists(configFile.FullName))
+        {
+            console.WriteLine($"Config path '{configFile.FullName}' exists as a directory instead of a file. Removing...");
+            Directory.Delete(configFile.FullName, recursive: true);
+        }
+
+        // Ensure config file exists - try to copy from app directory or create default
+        if (!configFile.Exists)
+        {
+            // Try to find config in application base directory
+            var appBaseConfig = Path.Combine(AppContext.BaseDirectory, "ConfigMounts", "zot-config.json");
+            if (File.Exists(appBaseConfig))
+            {
+                console.WriteLine($"Copying zot config from {appBaseConfig}");
+                File.Copy(appBaseConfig, configFile.FullName);
+            }
+            else
+            {
+                // Create default config
+                console.WriteLine("Creating default zot-config.json");
+                var defaultConfig = """
+                    {
+                      "distSpecVersion": "1.1.0",
+                      "storage": {
+                        "rootDirectory": "/var/lib/registry",
+                        "gc": true,
+                        "gcDelay": "1h",
+                        "gcInterval": "24h"
+                      },
+                      "http": {
+                        "address": "0.0.0.0",
+                        "port": "5000"
+                      },
+                      "log": {
+                        "level": "info"
+                      },
+                      "extensions": {
+                        "ui": {
+                          "enable": true
+                        },
+                        "search": {
+                          "enable": true,
+                          "cve": {
+                            "updateInterval": "24h"
+                          }
+                        }
+                      }
+                    }
+                    """;
+                File.WriteAllText(configFile.FullName, defaultConfig);
+            }
+        }
+
         // Ensure images directory exists
         if (!imagesDir.Exists)
         {

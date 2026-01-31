@@ -85,6 +85,8 @@ internal class ReverseProxyClient : IReverseProxyClient
             !ValidateAndFixCertificatePath(privKey.FullName))
         {
             _console.WriteError("Certificate files are missing. Please ensure Certs/fullchain.pem and Certs/privkey.pem exist.");
+            _console.WriteError("If using the init.sh installer, certificates should be in the Certs/ folder relative to where you run vega.");
+            _console.WriteError("You may need to copy them from .bin/ to your project root: cp -r .bin/Certs ./Certs");
             return;
         }
 
@@ -109,7 +111,7 @@ internal class ReverseProxyClient : IReverseProxyClient
 
     /// <summary>
     /// Validates a certificate path exists as a file, not a directory.
-    /// On some systems (especially Mac), Docker may incorrectly create directories
+    /// On some systems (especially Mac and WSL2), Docker may incorrectly create directories
     /// when mounting paths that don't exist. This method detects and removes such directories.
     /// </summary>
     private bool ValidateAndFixCertificatePath(string path)
@@ -122,15 +124,67 @@ internal class ReverseProxyClient : IReverseProxyClient
             {
                 Directory.Delete(path, recursive: true);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _console.WriteError($"Failed to remove directory '{path}': {ex.Message}");
-                return false;
+                // On WSL2/Linux, directories created by Docker may have root ownership.
+                // Fall back to shell command with elevated permissions.
+                if (!TryRemoveDirectoryWithShell(path))
+                {
+                    _console.WriteError($"Failed to remove directory '{path}'. Try running: sudo rm -rf \"{path}\"");
+                    return false;
+                }
             }
         }
 
         // Now check if the file exists
         return File.Exists(path);
+    }
+
+    /// <summary>
+    /// Attempts to remove a directory using shell commands, which may succeed
+    /// when .NET Directory.Delete fails due to permission issues.
+    /// </summary>
+    private bool TryRemoveDirectoryWithShell(string path)
+    {
+        try
+        {
+            var isWindows = System.OperatingSystem.IsWindows();
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = isWindows ? "cmd.exe" : "/bin/sh",
+                Arguments = isWindows
+                    ? $"/c rmdir /s /q \"{path}\""
+                    : $"-c \"rm -rf '{path}'\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            process?.WaitForExit(5000);
+
+            // Check if directory was actually removed
+            if (!Directory.Exists(path))
+            {
+                return true;
+            }
+
+            // If still exists, try with sudo on Linux/Mac
+            if (!isWindows)
+            {
+                startInfo.Arguments = $"-c \"sudo rm -rf '{path}'\"";
+                using var sudoProcess = System.Diagnostics.Process.Start(startInfo);
+                sudoProcess?.WaitForExit(10000);
+                return !Directory.Exists(path);
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public bool Exists()
@@ -365,6 +419,7 @@ internal class ReverseProxyClient : IReverseProxyClient
             !ValidateAndFixCertificatePath(privKeyPath))
         {
             _console.WriteError("Certificate files are missing. Cannot create TLS secret.");
+            _console.WriteError("Ensure Certs/fullchain.pem and Certs/privkey.pem exist in your project directory.");
             return true;
         }
 
