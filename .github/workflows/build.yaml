@@ -93,7 +93,7 @@ jobs:
         with:
           fallback: 0.1.0
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.1.3
         with:
           path: ./artifacts
       - name: Create Release
